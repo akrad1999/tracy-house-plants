@@ -42,12 +42,12 @@ export function CheckoutButton() {
         type="button"
         onClick={startCheckout}
         disabled={items.length === 0 || isLoading}
-        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#31551f] px-6 text-sm font-black text-white transition hover:bg-[#243f18] disabled:cursor-not-allowed disabled:bg-[#31551f]/40"
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-[#4e5026]/40"
       >
         {isLoading ? "Redirecting to Stripe..." : "Checkout"}
       </button>
       {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
-      <p className="mt-3 text-xs leading-5 text-[#4d3d24]/55">
+      <p className="mt-3 text-xs leading-5 text-[#49392c]/55">
         Your order is saved after payment.
       </p>
     </div>

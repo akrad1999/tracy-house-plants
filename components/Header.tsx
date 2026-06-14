@@ -51,7 +51,7 @@ export async function Header() {
   const avatarUrl = profile?.avatar_url ?? avatarFromMetadata;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#7a5c2f]/15 bg-[#f8f0df]/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-[#c8ba7e]/40 bg-[#f6f2eb]/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <Image
@@ -65,12 +65,12 @@ export async function Header() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <nav aria-label="Primary navigation" className="flex items-center gap-1 rounded-full bg-white/55 p-1 shadow-sm">
+          <nav aria-label="Primary navigation" className="flex items-center gap-1 rounded-full bg-white/70 p-1 shadow-sm">
             {navigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-3 py-2 text-sm font-semibold text-[#31551f] transition hover:bg-[#31551f] hover:text-white sm:px-4"
+                className="rounded-full px-3 py-2 text-sm font-semibold text-[#4e5026] transition hover:bg-[#4e5026] hover:text-[#f6f2eb] sm:px-4"
               >
                 {item.label}
               </Link>
@@ -79,12 +79,12 @@ export async function Header() {
           <Link
             href={user ? "/account" : "/sign-in?next=/account"}
             aria-label={user ? `Profile for ${displayName}` : "Log in"}
-            className="inline-flex size-11 items-center justify-center rounded-full border border-[#7a5c2f]/15 bg-white text-sm font-black text-[#31551f] shadow-sm transition hover:border-[#31551f]/40"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-[#c8ba7e]/60 bg-white text-sm font-black text-[#4e5026] shadow-sm transition hover:border-[#4e5026]/50"
           >
             {user && avatarUrl ? (
               <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <span className="flex size-8 items-center justify-center rounded-full bg-[#e7d7b6] text-xs text-[#31551f]">
+              <span className="flex size-8 items-center justify-center rounded-full bg-[#c8ba7e] text-[10px] font-black text-[#49392c]">
                 {user ? displayName.charAt(0).toUpperCase() : "Log"}
               </span>
             )}
