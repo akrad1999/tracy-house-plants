@@ -12,8 +12,8 @@ export default function CartPage() {
     <>
       <PageHero
         eyebrow="Cart"
-        title="Review your local pickup order"
-        description="Checkout is for local pickup only. Inventory is validated before Stripe Checkout starts and again after payment succeeds."
+        title="Your plant box"
+        description="Local pickup only."
       />
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <CartContents />

@@ -16,9 +16,9 @@ export default async function PlantsPage() {
   return (
     <>
       <PageHero
-        eyebrow="Catalog"
-        title="Browse pickup-ready houseplants"
-        description="Search locally available plants by name, care style, or light needs."
+        eyebrow="Plants"
+        title="Pickup-ready plants"
+        description="Small plants, simple pickup."
       />
       <PlantCatalog plants={plants} />
     </>

@@ -42,13 +42,13 @@ export function CheckoutButton() {
         type="button"
         onClick={startCheckout}
         disabled={items.length === 0 || isLoading}
-        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-green-950 px-6 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-950/40"
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#31551f] px-6 text-sm font-black text-white transition hover:bg-[#243f18] disabled:cursor-not-allowed disabled:bg-[#31551f]/40"
       >
         {isLoading ? "Redirecting to Stripe..." : "Checkout"}
       </button>
       {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
-      <p className="mt-3 text-xs leading-5 text-green-950/55">
-        Local pickup only. Your order is created after Stripe confirms payment.
+      <p className="mt-3 text-xs leading-5 text-[#4d3d24]/55">
+        Your order is saved after payment.
       </p>
     </div>
   );

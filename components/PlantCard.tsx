@@ -11,9 +11,9 @@ export function PlantCard({ plant }: PlantCardProps) {
   const primaryImage = plant.images[0];
 
   return (
-    <article className="group overflow-hidden rounded-[2rem] border border-green-900/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+    <article className="group rounded-[1.25rem] bg-[#fffaf0] p-3 shadow-lg shadow-[#5f4b24]/12 ring-1 ring-[#7a5c2f]/10 transition hover:-translate-y-1 hover:rotate-[-0.5deg] hover:shadow-xl">
       <Link href={`/plants/${plant.slug}`} className="block">
-        <div className="relative aspect-[4/3] overflow-hidden bg-green-100">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-[#dfd0aa]">
           {primaryImage ? (
             <Image
               src={primaryImage.src}
@@ -23,33 +23,33 @@ export function PlantCard({ plant }: PlantCardProps) {
               className="object-cover transition duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="flex size-full items-center justify-center p-6 text-center text-sm font-black uppercase tracking-[0.2em] text-green-900/45">
-              Image coming soon
+            <div className="flex size-full items-center justify-center p-6 text-center text-sm font-black uppercase tracking-[0.2em] text-[#31551f]/45">
+              Photo soon
             </div>
           )}
         </div>
-        <div className="p-5">
+        <div className="px-2 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-xl font-black text-green-950">{plant.name}</h3>
-              <p className="mt-1 text-sm italic text-green-800/75">{plant.botanicalName}</p>
+              <h3 className="text-xl font-black text-[#31551f]">{plant.name}</h3>
+              <p className="mt-1 text-sm italic text-[#6b5636]/75">{plant.botanicalName}</p>
             </div>
-            <p className="rounded-full bg-green-100 px-3 py-1 text-sm font-black text-green-950">
+            <p className="rounded-full bg-[#e7d7b6] px-3 py-1 text-sm font-black text-[#31551f]">
               {formatPrice(plant.price)}
             </p>
           </div>
-          <p className="mt-4 text-sm leading-6 text-green-950/70">{plant.shortDescription}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
+          <p className="mt-3 text-sm leading-6 text-[#4d3d24]/70">{plant.shortDescription}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-[#f1e4c8] px-3 py-1 text-xs font-bold text-[#73551f]">
               {plant.careLevel}
             </span>
-            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-900">
+            <span className="rounded-full bg-[#dbe7c0] px-3 py-1 text-xs font-bold text-[#31551f]">
               {plant.inventory} available
             </span>
           </div>
         </div>
       </Link>
-      <div className="px-5 pb-5">
+      <div className="px-2 pb-2">
         <AddToCartButton
           plant={{
             id: plant.id,
@@ -59,7 +59,7 @@ export function PlantCard({ plant }: PlantCardProps) {
             inventory: plant.inventory,
             image: primaryImage?.src
           }}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-green-950 px-5 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-950/40"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#31551f] px-5 text-sm font-black text-white transition hover:bg-[#243f18] disabled:cursor-not-allowed disabled:bg-[#31551f]/40"
         />
       </div>
     </article>

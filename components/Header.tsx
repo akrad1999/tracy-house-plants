@@ -1,12 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
-import { CartLink } from "@/components/cart/CartLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const navigation = [
   { href: "/", label: "Home" },
   { href: "/plants", label: "Plants" },
-  { href: "/account", label: "Account" }
+  { href: "/cart", label: "Cart" }
 ];
 
 type ProfileRow = {
@@ -51,43 +51,43 @@ export async function Header() {
   const avatarUrl = profile?.avatar_url ?? avatarFromMetadata;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-green-900/10 bg-[#fbf7ef]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-[#7a5c2f]/15 bg-[#f8f0df]/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-full bg-green-900 text-lg font-black text-white">
-            T
-          </span>
-          <span>
-            <span className="block text-lg font-black tracking-tight text-green-950">Tracy House Plants</span>
-            <span className="block text-xs font-medium uppercase tracking-[0.25em] text-green-800/70">Local pickup</span>
-          </span>
+          <Image
+            src="/auntys-plants-logo.png"
+            alt="Aunty's Plants Tracy"
+            width={72}
+            height={72}
+            priority
+            className="size-14 rounded-full object-cover shadow-sm sm:size-16"
+          />
         </Link>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <nav aria-label="Primary navigation" className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <nav aria-label="Primary navigation" className="flex items-center gap-1 rounded-full bg-white/55 p-1 shadow-sm">
             {navigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-4 py-2 text-sm font-semibold text-green-950 transition hover:bg-green-900 hover:text-white"
+                className="rounded-full px-3 py-2 text-sm font-semibold text-[#31551f] transition hover:bg-[#31551f] hover:text-white sm:px-4"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
-          <CartLink />
           <Link
             href={user ? "/account" : "/sign-in?next=/account"}
-            className="inline-flex min-h-11 items-center gap-3 rounded-full border border-green-900/15 bg-white px-3 py-2 text-sm font-black text-green-950 shadow-sm transition hover:border-green-900/40"
+            aria-label={user ? `Profile for ${displayName}` : "Log in"}
+            className="inline-flex size-11 items-center justify-center rounded-full border border-[#7a5c2f]/15 bg-white text-sm font-black text-[#31551f] shadow-sm transition hover:border-[#31551f]/40"
           >
             {user && avatarUrl ? (
               <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <span className="flex size-8 items-center justify-center rounded-full bg-green-100 text-xs text-green-950">
-                {user ? displayName.charAt(0).toUpperCase() : "?"}
+              <span className="flex size-8 items-center justify-center rounded-full bg-[#e7d7b6] text-xs text-[#31551f]">
+                {user ? displayName.charAt(0).toUpperCase() : "Log"}
               </span>
             )}
-            <span>{user ? displayName : "Log In"}</span>
           </Link>
         </div>
       </div>
