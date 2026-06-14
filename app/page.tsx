@@ -56,7 +56,7 @@ export default async function Home() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.25em] text-green-800">Featured</p>
-            <h2 className="mt-3 text-3xl font-black text-green-950">Fresh picks this week</h2>
+            <h2 className="mt-3 text-3xl font-black text-green-950">New additions this week!</h2>
           </div>
           <Link href="/plants" className="text-sm font-black text-green-900 underline-offset-4 hover:underline">
             View full catalog
