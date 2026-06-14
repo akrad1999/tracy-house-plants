@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
+import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
@@ -10,6 +11,21 @@ type FinalizeOrderItem = {
   plant_name: string;
   quantity: number;
   unit_price_cents: number;
+};
+
+type FinalizedOrderRow = {
+  id: string;
+  customer_email: string;
+  customer_name: string | null;
+  total_cents: number;
+  created_at: string;
+  confirmation_email_sent_at: string | null;
+  order_items: {
+    plant_name: string;
+    quantity: number;
+    unit_price_cents: number;
+    line_total_cents: number;
+  }[];
 };
 
 function getPaymentIntentId(paymentIntent: Stripe.Checkout.Session["payment_intent"]) {
@@ -78,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     if (!customerEmail) throw new Error("Stripe session is missing a customer email.");
 
-    const { error } = await supabase.rpc("finalize_stripe_checkout_order", {
+    const { data: orderId, error } = await supabase.rpc("finalize_stripe_checkout_order", {
       p_stripe_session_id: session.id,
       p_stripe_payment_intent_id: getPaymentIntentId(session.payment_intent),
       p_profile_id: profileId,
@@ -89,6 +105,65 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) throw new Error(`Unable to finalize Stripe order: ${error.message}`);
+
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select(
+        `
+        id,
+        customer_email,
+        customer_name,
+        total_cents,
+        created_at,
+        confirmation_email_sent_at,
+        order_items (
+          plant_name,
+          quantity,
+          unit_price_cents,
+          line_total_cents
+        )
+      `
+      )
+      .eq("id", orderId)
+      .single();
+
+    if (orderError) throw new Error(`Unable to load finalized order: ${orderError.message}`);
+
+    const finalizedOrder = order as FinalizedOrderRow;
+
+    if (!finalizedOrder.confirmation_email_sent_at) {
+      try {
+        await sendOrderConfirmationEmail({
+          orderId: finalizedOrder.id,
+          customerEmail: finalizedOrder.customer_email,
+          customerName: finalizedOrder.customer_name,
+          totalCents: finalizedOrder.total_cents,
+          createdAt: finalizedOrder.created_at,
+          items: finalizedOrder.order_items.map((item) => ({
+            plantName: item.plant_name,
+            quantity: item.quantity,
+            unitPriceCents: item.unit_price_cents,
+            lineTotalCents: item.line_total_cents
+          }))
+        });
+
+        await supabase
+          .from("orders")
+          .update({
+            confirmation_email_sent_at: new Date().toISOString(),
+            confirmation_email_last_error: null
+          })
+          .eq("id", finalizedOrder.id);
+      } catch (emailError) {
+        await supabase
+          .from("orders")
+          .update({
+            confirmation_email_last_error:
+              emailError instanceof Error ? emailError.message : "Unable to send confirmation email."
+          })
+          .eq("id", finalizedOrder.id);
+      }
+    }
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to process Stripe webhook." },
