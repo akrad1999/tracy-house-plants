@@ -13,7 +13,7 @@ export default async function Home() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[1.1fr_0.9fr] md:items-center lg:px-8 lg:py-24">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.25em] text-green-800">
-              Houseplants for local pickup
+              Houseplants homegrown locally in Tracy, California!
             </p>
             <h1 className="mt-5 text-5xl font-black tracking-tight text-green-950 sm:text-6xl">
               Healthy plants, ready for their next home.
