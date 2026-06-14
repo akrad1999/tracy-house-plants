@@ -19,6 +19,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please sign in before checkout." }, { status: 401 });
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("phone")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      return NextResponse.json({ error: profileError.message }, { status: 400 });
+    }
+
+    if (!profile?.phone) {
+      return NextResponse.json(
+        { error: "Please add a phone number before checkout.", code: "phone_required" },
+        { status: 409 }
+      );
+    }
+
     /*
       Checkout flow:
       1. The browser sends only plant ids and quantities.

@@ -27,6 +27,11 @@ export function CheckoutButton() {
         return;
       }
 
+      if (response.status === 409 && payload.error?.toLowerCase().includes("phone")) {
+        window.location.href = "/account?checkout=phone_required";
+        return;
+      }
+
       if (!response.ok || !payload.url) throw new Error(payload.error ?? "Unable to start checkout.");
 
       window.location.href = payload.url;

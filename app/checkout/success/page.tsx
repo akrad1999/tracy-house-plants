@@ -25,10 +25,10 @@ export default function CheckoutSuccessPage() {
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
-              href="/account/orders"
+              href="/account"
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c]"
             >
-              View orders
+              View account
             </Link>
             <Link
               href="/plants"

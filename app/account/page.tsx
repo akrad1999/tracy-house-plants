@@ -1,12 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { updateProfile } from "@/app/account/actions";
 import { PageHero } from "@/components/PageHero";
+import { formatPrice } from "@/lib/plants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type AccountPageProps = {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; checkout?: string }>;
+};
+
+type OrderItemRow = {
+  id: string;
+  plant_name: string;
+  quantity: number;
+  line_total_cents: number;
+};
+
+type OrderRow = {
+  id: string;
+  status: string;
+  pickup_status: string;
+  total_cents: number;
+  created_at: string;
+  order_items: OrderItemRow[];
 };
 
 export const dynamic = "force-dynamic";
@@ -17,7 +33,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const { saved } = await searchParams;
+  const { saved, checkout } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
@@ -27,9 +43,29 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url")
+    .select("full_name, avatar_url, phone")
     .eq("id", user.id)
     .maybeSingle();
+  const { data: ordersData, error: ordersError } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      status,
+      pickup_status,
+      total_cents,
+      created_at,
+      order_items (
+        id,
+        plant_name,
+        quantity,
+        line_total_cents
+      )
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (ordersError) throw new Error(`Unable to load orders: ${ordersError.message}`);
 
   const metadataName =
     typeof user.user_metadata.full_name === "string"
@@ -45,6 +81,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         : "";
   const displayName = profile?.full_name ?? metadataName;
   const avatarUrl = profile?.avatar_url ?? metadataAvatarUrl;
+  const orders = (ordersData ?? []) as OrderRow[];
 
   return (
     <>
@@ -60,6 +97,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             {saved === "1" ? (
               <p className="mt-4 rounded-2xl bg-green-100 px-4 py-3 text-sm font-bold text-green-950">
                 Profile saved.
+              </p>
+            ) : null}
+            {checkout === "phone_required" ? (
+              <p className="mt-4 rounded-2xl bg-[#fff4d8] px-4 py-3 text-sm font-bold text-[#49392c]">
+                Add a phone number before checkout so pickup can be coordinated.
               </p>
             ) : null}
             <div className="mt-6 flex items-center gap-4 rounded-3xl bg-[#fbf7ef] p-5">
@@ -86,14 +128,24 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 />
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-black text-green-950">Profile picture URL</span>
+                <span className="text-sm font-black text-green-950">Phone number</span>
                 <input
-                  name="avatarUrl"
-                  type="url"
-                  defaultValue={avatarUrl}
-                  placeholder="https://..."
+                  name="phone"
+                  type="tel"
+                  defaultValue={profile?.phone ?? ""}
+                  placeholder="Optional now, required at checkout"
                   className="min-h-12 rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 text-base text-green-950 outline-none transition placeholder:text-green-950/40 focus:border-green-800 focus:ring-4 focus:ring-green-900/10"
                 />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-black text-green-950">Profile picture</span>
+                <input
+                  name="avatarFile"
+                  type="file"
+                  accept="image/*"
+                  className="rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 py-3 text-sm text-green-950 file:mr-4 file:rounded-full file:border-0 file:bg-green-950 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+                />
+                <span className="text-xs text-green-950/55">JPG, PNG, WebP, or GIF under 5MB.</span>
               </label>
               <button
                 type="submit"
@@ -114,18 +166,51 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
           <div className="rounded-[2rem] border border-green-900/10 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="text-2xl font-black text-green-950">Order history</h2>
-            <div className="mt-6 rounded-3xl border border-dashed border-green-900/20 bg-[#fbf7ef] p-6">
-              <p className="font-black text-green-950">View your pickup orders</p>
-              <p className="mt-2 text-sm leading-6 text-green-950/65">
-                Paid Stripe orders appear after the webhook confirms payment and creates the order in Supabase.
-              </p>
-              <Link
-                href="/account/orders"
-                className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full bg-green-950 px-6 text-sm font-black text-white transition hover:bg-green-800"
-              >
-                View orders
-              </Link>
-            </div>
+            {orders.length === 0 ? (
+              <div className="mt-6 rounded-3xl border border-dashed border-green-900/20 bg-[#fbf7ef] p-6">
+                <p className="font-black text-green-950">No orders yet.</p>
+                <p className="mt-2 text-sm leading-6 text-green-950/65">
+                  Paid pickup orders will show here.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {orders.map((order) => (
+                  <article key={order.id} className="rounded-3xl bg-[#fbf7ef] p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-green-800">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                        <h3 className="mt-2 text-lg font-black text-green-950">Order {order.id.slice(0, 8)}</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-950">
+                          {order.status}
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-950">
+                          {order.pickup_status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid gap-2 border-t border-green-900/10 pt-4">
+                      {order.order_items.map((item) => (
+                        <div key={item.id} className="flex justify-between gap-4 text-sm">
+                          <span className="font-semibold text-green-950">
+                            {item.quantity} x {item.plant_name}
+                          </span>
+                          <span className="font-black text-green-950">{formatPrice(item.line_total_cents / 100)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 flex justify-between border-t border-green-900/10 pt-4">
+                      <span className="text-sm font-black text-green-950">Total</span>
+                      <span className="text-lg font-black text-green-950">{formatPrice(order.total_cents / 100)}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
