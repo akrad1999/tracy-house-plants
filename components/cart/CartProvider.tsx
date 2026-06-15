@@ -24,6 +24,55 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 const storageKey = "tracy-house-plants-cart";
+const cookieKey = "tracy-house-plants-cart";
+const cartMaxAgeSeconds = 60 * 60 * 24 * 7;
+
+function readCartSnapshot(value: string | null) {
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getCartCookie() {
+  const cookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${cookieKey}=`))
+    ?.split("=")[1];
+
+  try {
+    return cookie ? decodeURIComponent(cookie) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getCookieDomainAttribute() {
+  return window.location.hostname === "tracyhouseplants.com" || window.location.hostname.endsWith(".tracyhouseplants.com")
+    ? "; domain=.tracyhouseplants.com"
+    : "";
+}
+
+function clearCartSnapshot() {
+  window.localStorage.removeItem(storageKey);
+  document.cookie = `${cookieKey}=; path=/; max-age=0; SameSite=Lax`;
+  document.cookie = `${cookieKey}=; path=/; max-age=0; SameSite=Lax${getCookieDomainAttribute()}`;
+}
+
+export function persistCartSnapshot(items: CartItem[]) {
+  if (items.length === 0) {
+    clearCartSnapshot();
+    return;
+  }
+
+  const serializedCart = JSON.stringify(items);
+  window.localStorage.setItem(storageKey, serializedCart);
+  document.cookie = `${cookieKey}=${encodeURIComponent(serializedCart)}; path=/; max-age=${cartMaxAgeSeconds}; SameSite=Lax${getCookieDomainAttribute()}`;
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -31,8 +80,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const storedCart = window.localStorage.getItem(storageKey);
-      setItems(storedCart ? JSON.parse(storedCart) : []);
+      const storedItems = readCartSnapshot(window.localStorage.getItem(storageKey));
+      const cookieItems = readCartSnapshot(getCartCookie());
+      setItems(storedItems.length > 0 ? storedItems : cookieItems);
     } finally {
       setHasLoaded(true);
     }
@@ -40,7 +90,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (hasLoaded) {
-      window.localStorage.setItem(storageKey, JSON.stringify(items));
+      persistCartSnapshot(items);
     }
   }, [hasLoaded, items]);
 
