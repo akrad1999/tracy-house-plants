@@ -8,10 +8,12 @@ export type Plant = {
   price: number;
   shortDescription: string;
   description: string;
-  careLevel: "Easy" | "Moderate" | "Advanced";
+  careLevel: "Easy" | "Moderate" | "Hard";
   light: string;
   water: string;
   size: string;
+  potSize: number | null;
+  humidity: string | null;
   inventory: number;
   featured: boolean;
   tags: string[];
@@ -30,6 +32,8 @@ type SupabasePlantRow = {
   light: string;
   water: string;
   size: string;
+  pot_size: number | null;
+  humidity: string | null;
   inventory: number;
   featured: boolean;
   tags: string[];
@@ -48,6 +52,8 @@ const plantSelect = `
   light,
   water,
   size,
+  pot_size,
+  humidity,
   inventory,
   featured,
   tags,
@@ -82,6 +88,8 @@ function toPlant(row: SupabasePlantRow): Plant {
     light: row.light,
     water: row.water,
     size: row.size,
+    potSize: row.pot_size,
+    humidity: row.humidity,
     inventory: row.inventory,
     featured: row.featured,
     tags: row.tags,

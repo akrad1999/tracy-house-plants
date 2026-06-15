@@ -21,6 +21,27 @@ function SproutIcon({ className = "size-5" }: { className?: string }) {
   );
 }
 
+function LightIcon({ className = "size-5" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="4" />
+    </svg>
+  );
+}
+
+function WaterIcon({ className = "size-5" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 3.5S6.5 10 6.5 14.2a5.5 5.5 0 0 0 11 0C17.5 10 12 3.5 12 3.5Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CareIcon({ className = "size-5" }: { className?: string }) {
+  return <SproutIcon className={className} />;
+}
+
 function PickupPlantBox() {
   return (
     <svg aria-hidden="true" viewBox="0 0 88 88" className="size-16 shrink-0">
@@ -42,6 +63,7 @@ export function PlantCard({ plant }: PlantCardProps) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const { items } = useCart();
   const primaryImage = plant.images[0];
   const selectedImage = plant.images[selectedImageIndex] ?? primaryImage;
@@ -61,6 +83,30 @@ export function PlantCard({ plant }: PlantCardProps) {
     if (!isPreviewOpen) return;
     setSelectedQuantity((currentQuantity) => Math.max(1, Math.min(currentQuantity, Math.max(availableToAdd, 1))));
   }, [availableToAdd, isPreviewOpen]);
+
+  function showPreviousImage() {
+    if (plant.images.length <= 1) return;
+    setSelectedImageIndex((index) => (index - 1 + plant.images.length) % plant.images.length);
+  }
+
+  function showNextImage() {
+    if (plant.images.length <= 1) return;
+    setSelectedImageIndex((index) => (index + 1) % plant.images.length);
+  }
+
+  function handleImageTouchEnd(touchEndX: number) {
+    if (touchStartX === null) return;
+
+    const swipeDistance = touchStartX - touchEndX;
+    if (Math.abs(swipeDistance) > 40) {
+      if (swipeDistance > 0) {
+        showNextImage();
+      } else {
+        showPreviousImage();
+      }
+    }
+    setTouchStartX(null);
+  }
 
   return (
     <>
@@ -109,7 +155,11 @@ export function PlantCard({ plant }: PlantCardProps) {
             >
               ×
             </button>
-            <div className="relative aspect-[5/4] overflow-hidden rounded-2xl bg-[#c8ba7e] sm:aspect-[4/3] sm:rounded-3xl">
+            <div
+              className="relative aspect-[5/4] overflow-hidden rounded-2xl bg-[#c8ba7e] sm:aspect-[4/3] sm:rounded-3xl"
+              onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
+              onTouchEnd={(event) => handleImageTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+            >
               {selectedImage ? (
                 <Image src={selectedImage.src} alt={selectedImage.alt} fill sizes="100vw" className="object-cover" />
               ) : (
@@ -117,15 +167,35 @@ export function PlantCard({ plant }: PlantCardProps) {
                   Photo soon
                 </div>
               )}
+              {plant.images.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={showPreviousImage}
+                    aria-label="Show previous plant photo"
+                    className="absolute left-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-2xl font-black text-[#4e5026] shadow-md transition hover:bg-white"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={showNextImage}
+                    aria-label="Show next plant photo"
+                    className="absolute right-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-2xl font-black text-[#4e5026] shadow-md transition hover:bg-white"
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
             </div>
             {plant.images.length > 1 ? (
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:mt-3">
+              <div className="mt-2 flex gap-2 sm:mt-3">
                 {plant.images.slice(0, 3).map((image, index) => (
                   <button
                     key={image.src}
                     type="button"
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`relative aspect-square overflow-hidden rounded-xl bg-[#c8ba7e] ring-2 transition ${
+                    className={`relative size-14 overflow-hidden rounded-xl bg-[#c8ba7e] ring-2 transition sm:size-16 ${
                       selectedImageIndex === index ? "ring-[#4e5026]" : "ring-transparent"
                     }`}
                     aria-label={`Show ${plant.name} photo ${index + 1}`}
@@ -143,6 +213,18 @@ export function PlantCard({ plant }: PlantCardProps) {
                   <p className="mt-1 text-xl font-black text-[#cb6843] sm:mt-2 sm:text-2xl">{formatPrice(plant.price)}</p>
                 </div>
                 <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-black text-[#4e5026]">{plant.careLevel} care</span>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {[
+                  { label: plant.light, icon: <LightIcon className="size-4" /> },
+                  { label: plant.water, icon: <WaterIcon className="size-4" /> },
+                  { label: `${plant.careLevel} Care`, icon: <CareIcon className="size-4" /> }
+                ].map((item) => (
+                  <div key={item.label} className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl bg-[#eef2df] px-2 py-2 text-center text-[11px] font-black leading-tight text-[#4e5026]">
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                ))}
               </div>
               <div className="mt-2 rounded-3xl bg-white/65 p-3 sm:mt-3">
                 <p className={`flex items-center gap-2 text-base font-black ${availableToAdd > 0 ? "text-[#4e5026]" : "text-gray-500"}`}>
