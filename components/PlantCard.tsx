@@ -83,6 +83,15 @@ export function PlantCard({ plant }: PlantCardProps) {
                 </div>
               )}
             </div>
+            {plant.images.length > 1 ? (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {plant.images.slice(0, 3).map((image) => (
+                  <div key={image.src} className="relative aspect-square overflow-hidden rounded-xl bg-[#c8ba7e]">
+                    <Image src={image.src} alt={image.alt} fill sizes="120px" className="object-cover" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="pt-4">
               <div className="flex items-start justify-between gap-3">
                 <div>

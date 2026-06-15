@@ -53,6 +53,18 @@ export default async function PlantDetailPage({ params }: PlantDetailPageProps) 
             </div>
           )}
         </div>
+        {plant.images.length > 1 ? (
+          <div className="grid grid-cols-3 gap-3">
+            {plant.images.slice(0, 3).map((image) => (
+              <div
+                key={image.src}
+                className="relative aspect-square overflow-hidden rounded-xl border-4 border-[#f6f2eb] bg-[#c8ba7e] shadow-md shadow-[#49392c]/10"
+              >
+                <Image src={image.src} alt={image.alt} fill sizes="(min-width: 1024px) 16vw, 30vw" className="object-cover" />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div>
