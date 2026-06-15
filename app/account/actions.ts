@@ -4,11 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function redirectWithProfileError(message: string): never {
+  redirect(`/account?error=${encodeURIComponent(message)}`);
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
   if (!user) redirect("/sign-in?next=/account");
 
@@ -24,18 +28,18 @@ export async function updateProfile(formData: FormData) {
     .maybeSingle();
 
   if (existingProfileError) {
-    throw new Error(`Unable to load profile: ${existingProfileError.message}`);
+    redirectWithProfileError(`Unable to load profile: ${existingProfileError.message}`);
   }
 
   avatarUrl = existingProfile?.avatar_url ?? null;
 
   if (avatarFile instanceof File && avatarFile.size > 0) {
     if (!avatarFile.type.startsWith("image/")) {
-      throw new Error("Profile picture must be an image.");
+      redirectWithProfileError("Profile picture must be an image.");
     }
 
     if (avatarFile.size > 5 * 1024 * 1024) {
-      throw new Error("Profile picture must be smaller than 5MB.");
+      redirectWithProfileError("Profile picture must be smaller than 5MB.");
     }
 
     const extension = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -48,7 +52,7 @@ export async function updateProfile(formData: FormData) {
       });
 
     if (uploadError) {
-      throw new Error(`Unable to upload profile picture: ${uploadError.message}`);
+      redirectWithProfileError(`Unable to upload profile picture: ${uploadError.message}`);
     }
 
     const {
@@ -65,7 +69,7 @@ export async function updateProfile(formData: FormData) {
     avatar_url: avatarUrl
   });
 
-  if (profileError) throw new Error(`Unable to update profile: ${profileError.message}`);
+  if (profileError) redirectWithProfileError(`Unable to update profile: ${profileError.message}`);
 
   const { error: authError } = await supabase.auth.updateUser({
     data: {
@@ -77,7 +81,7 @@ export async function updateProfile(formData: FormData) {
     }
   });
 
-  if (authError) throw new Error(`Unable to update auth profile: ${authError.message}`);
+  if (authError) redirectWithProfileError(`Unable to update auth profile: ${authError.message}`);
 
   revalidatePath("/");
   revalidatePath("/account");

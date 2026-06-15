@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/plants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type AccountPageProps = {
-  searchParams: Promise<{ saved?: string; checkout?: string }>;
+  searchParams: Promise<{ saved?: string; checkout?: string; error?: string }>;
 };
 
 type OrderItemRow = {
@@ -33,11 +33,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const { saved, checkout } = await searchParams;
+  const { saved, checkout, error } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
   if (!user) redirect("/sign-in?next=/account");
 
@@ -102,6 +102,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             {checkout === "phone_required" ? (
               <p className="mt-4 rounded-2xl bg-[#fff4d8] px-4 py-3 text-sm font-bold text-[#49392c]">
                 Add a phone number before checkout so pickup can be coordinated.
+              </p>
+            ) : null}
+            {error ? (
+              <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
+                {error}
               </p>
             ) : null}
             <div className="mt-6 flex items-center gap-4 rounded-3xl bg-[#fbf7ef] p-5">

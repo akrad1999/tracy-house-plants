@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createSupabaseServerClient();
     const {
       data: { user }
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
     if (!user?.email) {
       return NextResponse.json({ error: "Please sign in before checkout." }, { status: 401 });
