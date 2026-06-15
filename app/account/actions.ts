@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function redirectWithProfileError(message: string): never {
-  redirect(`/account?error=${encodeURIComponent(message)}`);
+  redirect(`/account?setup=1&error=${encodeURIComponent(message)}`);
+}
+
+function getSafeNextPath(value: FormDataEntryValue | null) {
+  const nextPath = String(value ?? "").trim();
+  return nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "";
 }
 
 export async function updateProfile(formData: FormData) {
@@ -18,8 +23,14 @@ export async function updateProfile(formData: FormData) {
 
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim();
+  const nextPath = getSafeNextPath(formData.get("nextPath"));
   const avatarFile = formData.get("avatarFile");
   let avatarUrl: string | null = null;
+
+  if (!phone) {
+    redirectWithProfileError("Phone number is required to continue.");
+  }
 
   const { data: existingProfile, error: existingProfileError } = await supabase
     .from("profiles")
@@ -66,6 +77,7 @@ export async function updateProfile(formData: FormData) {
     email: user.email,
     full_name: fullName || null,
     phone: phone || null,
+    address: address || null,
     avatar_url: avatarUrl
   });
 
@@ -76,6 +88,7 @@ export async function updateProfile(formData: FormData) {
       full_name: fullName || null,
       name: fullName || null,
       phone: phone || null,
+      address: address || null,
       avatar_url: avatarUrl,
       picture: avatarUrl
     }
@@ -85,5 +98,5 @@ export async function updateProfile(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/account");
-  redirect("/account?saved=1");
+  redirect(nextPath || "/account?saved=1");
 }

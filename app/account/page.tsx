@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { updateProfile } from "@/app/account/actions";
+import { FinishAccountModal } from "@/components/account/FinishAccountModal";
 import { PageHero } from "@/components/PageHero";
 import { formatPrice } from "@/lib/plants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type AccountPageProps = {
-  searchParams: Promise<{ saved?: string; checkout?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; checkout?: string; error?: string; setup?: string; next?: string }>;
 };
 
 type OrderItemRow = {
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const { saved, checkout, error } = await searchParams;
+  const { saved, checkout, error, setup, next } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
@@ -43,7 +44,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, phone")
+    .select("full_name, avatar_url, phone, address")
     .eq("id", user.id)
     .maybeSingle();
   const { data: ordersData, error: ordersError } = await supabase
@@ -81,10 +82,16 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         : "";
   const displayName = profile?.full_name ?? metadataName;
   const avatarUrl = profile?.avatar_url ?? metadataAvatarUrl;
+  const phone = profile?.phone ?? "";
+  const address = profile?.address ?? "";
   const orders = (ordersData ?? []) as OrderRow[];
+  const showSetupModal = setup === "1" || !phone;
 
   return (
     <>
+      {showSetupModal ? (
+        <FinishAccountModal displayName={displayName} phone={phone} address={address} nextPath={next} />
+      ) : null}
       <PageHero
         eyebrow="Account"
         title={`Welcome, ${displayName}`}
@@ -137,9 +144,21 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 <input
                   name="phone"
                   type="tel"
-                  defaultValue={profile?.phone ?? ""}
-                  placeholder="Optional now, required at checkout"
+                  required
+                  defaultValue={phone}
+                  placeholder="Required for pickup coordination"
                   className="min-h-12 rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 text-base text-green-950 outline-none transition placeholder:text-green-950/40 focus:border-green-800 focus:ring-4 focus:ring-green-900/10"
+                />
+                <span className="text-xs font-bold text-green-950/55">Required before your account can be saved.</span>
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-black text-green-950">Address optional</span>
+                <textarea
+                  name="address"
+                  defaultValue={address}
+                  rows={3}
+                  placeholder="Optional pickup/contact address"
+                  className="rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 py-3 text-base text-green-950 outline-none transition placeholder:text-green-950/40 focus:border-green-800 focus:ring-4 focus:ring-green-900/10"
                 />
               </label>
               <label className="grid gap-2">
