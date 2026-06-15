@@ -15,7 +15,7 @@ export default function CheckoutSuccessPage() {
       <PageHero
         eyebrow="Paid"
         title="Thank you"
-        description="Your plants will be ready for pickup soon."
+        description="We will text you within 24 hours to coordinate pickup time."
       />
       <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/60 p-6 text-center shadow-sm sm:p-8">
@@ -28,13 +28,13 @@ export default function CheckoutSuccessPage() {
               href="/account"
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c]"
             >
-              View account
+              View Orders
             </Link>
             <Link
               href="/plants"
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#c8ba7e]/25 bg-white/45 px-6 text-sm font-black text-[#4e5026] transition hover:border-[#4e5026]"
             >
-              Continue shopping
+              Continue Shopping
             </Link>
           </div>
         </div>

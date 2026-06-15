@@ -15,23 +15,23 @@ export default async function Home() {
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#cb6843]">Tracy, California</p>
             <h1 className="mt-4 text-4xl font-black tracking-tight text-[#4e5026] sm:text-6xl">
-              Aunty&apos;s backyard plants.
+              Aunty&apos;s house plants.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-[#49392c]/75">
-              Homegrown houseplants for local pickup.
+              Bringing a little more green into your home, one plant at a time. Every plant is carefully cared for and ready for its next home.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/plants"
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c]"
               >
-                Shop plants
+                View Plants
               </Link>
               <Link
                 href="/cart"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#c8ba7e]/70 bg-[#f6f2eb]/70 px-6 text-sm font-black text-[#4e5026] transition hover:border-[#4e5026]"
               >
-                View cart
+                Go to Cart
               </Link>
             </div>
           </div>
