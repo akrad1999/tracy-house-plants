@@ -85,7 +85,7 @@ export async function Header() {
               <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               <span className="flex size-8 items-center justify-center rounded-full bg-[#c8ba7e] text-[10px] font-black text-[#49392c]">
-                {user ? displayName.charAt(0).toUpperCase() : "Log"}
+                {user ? displayName.charAt(0).toUpperCase() : "Log in"}
               </span>
             )}
           </Link>
