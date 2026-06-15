@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
+import { CartLink } from "@/components/cart/CartLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const navigation = [
   { href: "/", label: "Home" },
-  { href: "/plants", label: "Plants" },
-  { href: "/cart", label: "Cart" }
+  { href: "/plants", label: "Plants" }
 ];
 
 type ProfileRow = {
@@ -89,6 +89,7 @@ export async function Header() {
               </span>
             )}
           </Link>
+          <CartLink />
         </div>
       </div>
     </header>

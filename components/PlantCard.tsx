@@ -58,7 +58,15 @@ export function PlantCard({ plant }: PlantCardProps) {
 
       {isPreviewOpen ? (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#49392c]/55 px-4 py-4 sm:items-center">
-          <div className="w-full max-w-md rounded-3xl bg-[#f6f2eb] p-4 shadow-2xl">
+          <div className="relative w-full max-w-md rounded-3xl bg-[#f6f2eb] p-4 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(false)}
+              aria-label="Close plant preview"
+              className="absolute left-3 top-3 z-10 inline-flex size-10 items-center justify-center rounded-full bg-white/90 text-xl font-black text-[#49392c] shadow-sm transition hover:bg-white hover:text-[#4e5026]"
+            >
+              ×
+            </button>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#c8ba7e]">
               {primaryImage ? (
                 <Image src={primaryImage.src} alt={primaryImage.alt} fill sizes="100vw" className="object-cover" />
