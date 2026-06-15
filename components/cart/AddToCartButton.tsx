@@ -13,9 +13,10 @@ type AddToCartButtonProps = {
     image?: string;
   };
   className?: string;
+  quantity?: number;
 };
 
-export function AddToCartButton({ plant, className }: AddToCartButtonProps) {
+export function AddToCartButton({ plant, className, quantity = 1 }: AddToCartButtonProps) {
   const { addItem, items } = useCart();
   const [added, setAdded] = useState(false);
   const quantityInCart = items.find((item) => item.plantId === plant.id)?.quantity ?? 0;
@@ -34,7 +35,7 @@ export function AddToCartButton({ plant, className }: AddToCartButtonProps) {
         inventory: plant.inventory,
         image: plant.image
       },
-      1
+      quantity
     );
     setAdded(true);
     window.dispatchEvent(new Event("tracy-cart-added"));
@@ -57,7 +58,7 @@ export function AddToCartButton({ plant, className }: AddToCartButtonProps) {
           added ? "-translate-y-2 scale-100 opacity-100" : "translate-y-0 scale-75 opacity-0"
         }`}
       >
-        +1
+        +{quantity}
       </span>
       {isSoldOut ? "Sold out" : added ? "Added to cart" : "Add to cart"}
     </button>
