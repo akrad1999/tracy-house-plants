@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { GoogleSignInButton, YahooSignInButton } from "@/components/GoogleSignInButton";
-import { ManualAuthForms } from "@/components/ManualAuthForms";
 import { PageHero } from "@/components/PageHero";
 
 type SignInPageProps = {
@@ -39,7 +38,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <GoogleSignInButton next={nextPath} />
             <YahooSignInButton next={nextPath} />
           </div>
-          <ManualAuthForms nextPath={nextPath} />
         </div>
       </section>
     </>
