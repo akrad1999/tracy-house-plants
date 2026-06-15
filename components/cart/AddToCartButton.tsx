@@ -16,11 +16,15 @@ type AddToCartButtonProps = {
 };
 
 export function AddToCartButton({ plant, className }: AddToCartButtonProps) {
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const [added, setAdded] = useState(false);
-  const isSoldOut = plant.inventory <= 0;
+  const quantityInCart = items.find((item) => item.plantId === plant.id)?.quantity ?? 0;
+  const availableToAdd = Math.max(plant.inventory - quantityInCart, 0);
+  const isSoldOut = availableToAdd <= 0;
 
   function handleClick() {
+    if (isSoldOut) return;
+
     addItem(
       {
         plantId: plant.id,
@@ -44,7 +48,7 @@ export function AddToCartButton({ plant, className }: AddToCartButtonProps) {
       disabled={isSoldOut}
       className={`relative overflow-visible ${
         className ??
-        "inline-flex min-h-12 w-full items-center justify-center rounded-full bg-green-950 px-6 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-950/40 sm:w-auto"
+          "inline-flex min-h-12 w-full items-center justify-center rounded-full bg-green-950 px-6 text-sm font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-400 sm:w-auto"
       }`}
     >
       <span

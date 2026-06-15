@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { useCart } from "@/components/cart/CartProvider";
 import { formatPrice, type Plant } from "@/lib/plants";
 
 type PlantCardProps = {
@@ -12,7 +13,11 @@ type PlantCardProps = {
 
 export function PlantCard({ plant }: PlantCardProps) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const { items } = useCart();
   const primaryImage = plant.images[0];
+  const quantityInCart = items.find((item) => item.plantId === plant.id)?.quantity ?? 0;
+  const availableToAdd = Math.max(plant.inventory - quantityInCart, 0);
+  const availabilityLabel = availableToAdd > 0 ? `${availableToAdd} available` : "Sold out";
   const cartPlant = {
     id: plant.id,
     slug: plant.slug,
@@ -51,7 +56,9 @@ export function PlantCard({ plant }: PlantCardProps) {
                 {formatPrice(plant.price)}
               </p>
             </div>
-            <p className="mt-2 text-xs font-semibold text-[#4e5026]/80">{plant.inventory} available</p>
+            <p className={`mt-2 text-xs font-semibold ${availableToAdd > 0 ? "text-[#4e5026]/80" : "text-gray-500"}`}>
+              {availabilityLabel}
+            </p>
           </div>
         </button>
       </article>
@@ -85,8 +92,12 @@ export function PlantCard({ plant }: PlantCardProps) {
                 <p className="rounded-full bg-[#cb6843] px-3 py-1 text-sm font-black text-white">{formatPrice(plant.price)}</p>
               </div>
               <p className="mt-3 text-sm leading-6 text-[#49392c]/75">{plant.shortDescription}</p>
-              <p className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-[#4e5026]">
-                {plant.inventory} available
+              <p
+                className={`mt-2 text-xs font-bold uppercase tracking-[0.18em] ${
+                  availableToAdd > 0 ? "text-[#4e5026]" : "text-gray-500"
+                }`}
+              >
+                {availabilityLabel}
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <Link
@@ -97,7 +108,7 @@ export function PlantCard({ plant }: PlantCardProps) {
                 </Link>
                 <AddToCartButton
                   plant={cartPlant}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-[#4e5026]/40"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400"
                 />
               </div>
               <button
