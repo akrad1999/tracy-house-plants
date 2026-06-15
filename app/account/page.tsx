@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const { saved, checkout, error, setup, next } = await searchParams;
+  const { saved, checkout, error, next } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
@@ -44,7 +44,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, phone, address")
+    .select("full_name, avatar_url, phone, address_line1, address_line2, city, state, postal_code, country")
     .eq("id", user.id)
     .maybeSingle();
   const { data: ordersData, error: ordersError } = await supabase
@@ -83,14 +83,29 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   const displayName = profile?.full_name ?? metadataName;
   const avatarUrl = profile?.avatar_url ?? metadataAvatarUrl;
   const phone = profile?.phone ?? "";
-  const address = profile?.address ?? "";
+  const addressLine1 = profile?.address_line1 ?? "";
+  const addressLine2 = profile?.address_line2 ?? "";
+  const city = profile?.city ?? "";
+  const state = profile?.state ?? "";
+  const postalCode = profile?.postal_code ?? "";
+  const country = profile?.country ?? "United States";
   const orders = (ordersData ?? []) as OrderRow[];
-  const showSetupModal = setup === "1" || !phone;
+  const showSetupModal = !phone;
 
   return (
     <>
       {showSetupModal ? (
-        <FinishAccountModal displayName={displayName} phone={phone} address={address} nextPath={next} />
+        <FinishAccountModal
+          displayName={displayName}
+          phone={phone}
+          addressLine1={addressLine1}
+          addressLine2={addressLine2}
+          city={city}
+          state={state}
+          postalCode={postalCode}
+          country={country}
+          nextPath={next}
+        />
       ) : null}
       <PageHero
         eyebrow="Account"
@@ -146,21 +161,43 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                   type="tel"
                   required
                   defaultValue={phone}
-                  placeholder="Required for pickup coordination"
+                  placeholder="10 digits required"
+                  minLength={10}
                   className="min-h-12 rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 text-base text-green-950 outline-none transition placeholder:text-green-950/40 focus:border-green-800 focus:ring-4 focus:ring-green-900/10"
                 />
-                <span className="text-xs font-bold text-green-950/55">Required before your account can be saved.</span>
+                <span className="text-xs font-bold text-green-950/55">A valid 10-digit phone number is required before your account can be saved.</span>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-black text-green-950">Address optional</span>
-                <textarea
-                  name="address"
-                  defaultValue={address}
-                  rows={3}
-                  placeholder="Optional pickup/contact address"
-                  className="rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 py-3 text-base text-green-950 outline-none transition placeholder:text-green-950/40 focus:border-green-800 focus:ring-4 focus:ring-green-900/10"
-                />
-              </label>
+              <div className="grid gap-3 rounded-3xl bg-[#fbf7ef] p-4">
+                <p className="text-sm font-black text-green-950">Address optional</p>
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-green-950/65">Address line 1</span>
+                  <input name="addressLine1" defaultValue={addressLine1} className="min-h-11 rounded-2xl border border-green-900/15 bg-white px-4 text-sm text-green-950 outline-none focus:border-green-800 focus:ring-4 focus:ring-green-900/10" />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-green-950/65">Address line 2</span>
+                  <input name="addressLine2" defaultValue={addressLine2} className="min-h-11 rounded-2xl border border-green-900/15 bg-white px-4 text-sm text-green-950 outline-none focus:border-green-800 focus:ring-4 focus:ring-green-900/10" />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1">
+                    <span className="text-xs font-bold text-green-950/65">City</span>
+                    <input name="city" defaultValue={city} className="min-h-11 rounded-2xl border border-green-900/15 bg-white px-4 text-sm text-green-950 outline-none focus:border-green-800 focus:ring-4 focus:ring-green-900/10" />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs font-bold text-green-950/65">State/Province/Region</span>
+                    <input name="state" defaultValue={state} className="min-h-11 rounded-2xl border border-green-900/15 bg-white px-4 text-sm text-green-950 outline-none focus:border-green-800 focus:ring-4 focus:ring-green-900/10" />
+                  </label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1">
+                    <span className="text-xs font-bold text-green-950/65">ZIP/Postal code</span>
+                    <input name="postalCode" defaultValue={postalCode} className="min-h-11 rounded-2xl border border-green-900/15 bg-white px-4 text-sm text-green-950 outline-none focus:border-green-800 focus:ring-4 focus:ring-green-900/10" />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs font-bold text-green-950/65">Country</span>
+                    <input name="country" defaultValue={country} className="min-h-11 rounded-2xl border border-green-900/15 bg-white px-4 text-sm text-green-950 outline-none focus:border-green-800 focus:ring-4 focus:ring-green-900/10" />
+                  </label>
+                </div>
+              </div>
               <label className="grid gap-2">
                 <span className="text-sm font-black text-green-950">Profile picture</span>
                 <input

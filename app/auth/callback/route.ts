@@ -12,10 +12,22 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      const setupUrl = new URL("/account", requestUrl.origin);
-      setupUrl.searchParams.set("setup", "1");
-      setupUrl.searchParams.set("next", safeNext);
-      return NextResponse.redirect(setupUrl);
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle();
+
+        if (!profile?.phone) {
+          const setupUrl = new URL("/account", requestUrl.origin);
+          setupUrl.searchParams.set("setup", "1");
+          setupUrl.searchParams.set("next", safeNext);
+          return NextResponse.redirect(setupUrl);
+        }
+      }
+
+      return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
     }
   }
 

@@ -13,6 +13,11 @@ function getSafeNextPath(value: FormDataEntryValue | null) {
   return nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "";
 }
 
+function getTenDigitPhone(value: FormDataEntryValue | null) {
+  const phone = String(value ?? "").replace(/\D/g, "");
+  return phone.length === 10 ? phone : null;
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -22,14 +27,19 @@ export async function updateProfile(formData: FormData) {
   if (!user) redirect("/sign-in?next=/account");
 
   const fullName = String(formData.get("fullName") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const address = String(formData.get("address") ?? "").trim();
+  const phone = getTenDigitPhone(formData.get("phone"));
+  const addressLine1 = String(formData.get("addressLine1") ?? "").trim();
+  const addressLine2 = String(formData.get("addressLine2") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const state = String(formData.get("state") ?? "").trim();
+  const postalCode = String(formData.get("postalCode") ?? "").trim();
+  const country = String(formData.get("country") ?? "United States").trim() || "United States";
   const nextPath = getSafeNextPath(formData.get("nextPath"));
   const avatarFile = formData.get("avatarFile");
   let avatarUrl: string | null = null;
 
   if (!phone) {
-    redirectWithProfileError("Phone number is required to continue.");
+    redirectWithProfileError("Enter a valid 10-digit phone number to continue.");
   }
 
   const { data: existingProfile, error: existingProfileError } = await supabase
@@ -76,8 +86,13 @@ export async function updateProfile(formData: FormData) {
     id: user.id,
     email: user.email,
     full_name: fullName || null,
-    phone: phone || null,
-    address: address || null,
+    phone,
+    address_line1: addressLine1 || null,
+    address_line2: addressLine2 || null,
+    city: city || null,
+    state: state || null,
+    postal_code: postalCode || null,
+    country,
     avatar_url: avatarUrl
   });
 
@@ -87,8 +102,13 @@ export async function updateProfile(formData: FormData) {
     data: {
       full_name: fullName || null,
       name: fullName || null,
-      phone: phone || null,
-      address: address || null,
+      phone,
+      address_line1: addressLine1 || null,
+      address_line2: addressLine2 || null,
+      city: city || null,
+      state: state || null,
+      postal_code: postalCode || null,
+      country,
       avatar_url: avatarUrl,
       picture: avatarUrl
     }

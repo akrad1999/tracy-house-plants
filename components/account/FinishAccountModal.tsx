@@ -6,13 +6,29 @@ import { updateProfile } from "@/app/account/actions";
 type FinishAccountModalProps = {
   displayName: string;
   phone: string;
-  address: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
   nextPath?: string;
 };
 
-export function FinishAccountModal({ displayName, phone, address, nextPath }: FinishAccountModalProps) {
+export function FinishAccountModal({
+  displayName,
+  phone,
+  addressLine1,
+  addressLine2,
+  city,
+  state,
+  postalCode,
+  country,
+  nextPath
+}: FinishAccountModalProps) {
   const [phoneValue, setPhoneValue] = useState(phone);
-  const canCreateAccount = phoneValue.trim().length > 0;
+  const phoneDigits = phoneValue.replace(/\D/g, "");
+  const canCreateAccount = phoneDigits.length === 10;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#49392c]/60 px-4 py-4 backdrop-blur-sm sm:items-center">
@@ -21,7 +37,7 @@ export function FinishAccountModal({ displayName, phone, address, nextPath }: Fi
           <p className="text-xs font-black uppercase tracking-[0.22em] text-[#cb6843]">Welcome</p>
           <h2 className="mt-2 text-3xl font-black text-[#4e5026]">Finish creating your account</h2>
           <p className="mt-3 text-sm leading-6 text-[#49392c]/70">
-            Add a phone number so pickup can be coordinated. You can also update your name, address, and profile photo.
+            Add a 10-digit phone number so pickup can be coordinated. You can also update your name, address, and profile photo.
           </p>
         </div>
 
@@ -45,24 +61,46 @@ export function FinishAccountModal({ displayName, phone, address, nextPath }: Fi
               required
               value={phoneValue}
               onChange={(event) => setPhoneValue(event.target.value)}
-              placeholder="Required to continue"
+              placeholder="10 digits required"
+              minLength={10}
               className="min-h-12 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-base text-[#49392c] outline-none transition placeholder:text-[#49392c]/40 focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
             />
             {!canCreateAccount ? (
-              <span className="text-xs font-bold text-red-700">Phone number is required to continue.</span>
+              <span className="text-xs font-bold text-red-700">A valid 10-digit phone number is required to continue.</span>
             ) : null}
           </label>
 
-          <label className="grid gap-2">
-            <span className="text-sm font-black text-[#4e5026]">Address optional</span>
-            <textarea
-              name="address"
-              defaultValue={address}
-              rows={3}
-              placeholder="Optional pickup/contact address"
-              className="rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 py-3 text-base text-[#49392c] outline-none transition placeholder:text-[#49392c]/40 focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
-            />
-          </label>
+          <div className="grid gap-3 rounded-3xl bg-white/60 p-4">
+            <p className="text-sm font-black text-[#4e5026]">Address optional</p>
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-[#49392c]/70">Address line 1</span>
+              <input name="addressLine1" defaultValue={addressLine1} className="min-h-11 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-sm text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10" />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-[#49392c]/70">Address line 2</span>
+              <input name="addressLine2" defaultValue={addressLine2} className="min-h-11 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-sm text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10" />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-[#49392c]/70">City</span>
+                <input name="city" defaultValue={city} className="min-h-11 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-sm text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10" />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-[#49392c]/70">State/Province/Region</span>
+                <input name="state" defaultValue={state} className="min-h-11 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-sm text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10" />
+              </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-[#49392c]/70">ZIP/Postal code</span>
+                <input name="postalCode" defaultValue={postalCode} className="min-h-11 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-sm text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10" />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-[#49392c]/70">Country</span>
+                <input name="country" defaultValue={country || "United States"} className="min-h-11 rounded-2xl border border-[#c8ba7e]/45 bg-white px-4 text-sm text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10" />
+              </label>
+            </div>
+          </div>
 
           <label className="grid gap-2">
             <span className="text-sm font-black text-[#4e5026]">Profile picture optional</span>
