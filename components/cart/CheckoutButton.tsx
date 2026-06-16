@@ -24,7 +24,7 @@ export function CheckoutButton() {
 
       if (response.status === 401) {
         persistCartSnapshot(items);
-        window.location.href = "/sign-in?next=/cart";
+        window.location.href = `/sign-in?next=${encodeURIComponent("/cart")}`;
         return;
       }
 

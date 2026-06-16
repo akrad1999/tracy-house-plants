@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function buildSignedInRedirect(origin: string, nextPath: string) {
+  const redirectUrl = new URL(nextPath, origin);
+  redirectUrl.searchParams.set("signed_in", "1");
+  return redirectUrl;
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
@@ -27,7 +33,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
+      return NextResponse.redirect(buildSignedInRedirect(requestUrl.origin, safeNext));
     }
   }
 

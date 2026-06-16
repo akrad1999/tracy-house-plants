@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import type { User } from "@supabase/supabase-js";
+import { ProfileLink } from "@/components/auth/ProfileLink";
 import { CartLink } from "@/components/cart/CartLink";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -76,19 +78,33 @@ export async function Header() {
               </Link>
             ))}
           </nav>
-          <Link
-            href={user ? "/account" : "/sign-in?next=/account"}
-            aria-label={user ? `Profile for ${displayName}` : "Log in"}
-            className="inline-flex size-11 items-center justify-center rounded-full border border-[#c8ba7e]/60 bg-white text-sm font-black text-[#4e5026] shadow-sm transition hover:border-[#4e5026]/50"
+          <Suspense
+            fallback={
+              <Link
+                href={user ? "/account" : "/sign-in?next=/account"}
+                aria-label={user ? `Profile for ${displayName}` : "Log in"}
+                className="inline-flex size-11 items-center justify-center rounded-full border border-[#c8ba7e]/60 bg-white text-sm font-black text-[#4e5026] shadow-sm transition hover:border-[#4e5026]/50"
+              >
+                <span className="flex size-8 items-center justify-center rounded-full bg-[#c8ba7e] text-[10px] font-black text-[#49392c]">
+                  {user ? displayName.charAt(0).toUpperCase() : "Log in"}
+                </span>
+              </Link>
+            }
           >
-            {user && avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="flex size-8 items-center justify-center rounded-full bg-[#c8ba7e] text-[10px] font-black text-[#49392c]">
-                {user ? displayName.charAt(0).toUpperCase() : "Log in"}
-              </span>
-            )}
-          </Link>
+            <ProfileLink
+              isSignedIn={Boolean(user)}
+              label={user ? `Profile for ${displayName}` : "Log in"}
+              className="inline-flex size-11 items-center justify-center rounded-full border border-[#c8ba7e]/60 bg-white text-sm font-black text-[#4e5026] shadow-sm transition hover:border-[#4e5026]/50"
+            >
+              {user && avatarUrl ? (
+                <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="flex size-8 items-center justify-center rounded-full bg-[#c8ba7e] text-[10px] font-black text-[#49392c]">
+                  {user ? displayName.charAt(0).toUpperCase() : "Log in"}
+                </span>
+              )}
+            </ProfileLink>
+          </Suspense>
           <CartLink />
         </div>
       </div>
