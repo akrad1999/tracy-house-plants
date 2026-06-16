@@ -35,51 +35,9 @@ export async function updateProfile(formData: FormData) {
   const postalCode = String(formData.get("postalCode") ?? "").trim();
   const country = String(formData.get("country") ?? "United States").trim() || "United States";
   const nextPath = getSafeNextPath(formData.get("nextPath"));
-  const avatarFile = formData.get("avatarFile");
-  let avatarUrl: string | null = null;
 
   if (!phone) {
     redirectWithProfileError("Enter a valid 10-digit phone number to continue.");
-  }
-
-  const { data: existingProfile, error: existingProfileError } = await supabase
-    .from("profiles")
-    .select("avatar_url")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (existingProfileError) {
-    redirectWithProfileError(`Unable to load profile: ${existingProfileError.message}`);
-  }
-
-  avatarUrl = existingProfile?.avatar_url ?? null;
-
-  if (avatarFile instanceof File && avatarFile.size > 0) {
-    if (!avatarFile.type.startsWith("image/")) {
-      redirectWithProfileError("Profile picture must be an image.");
-    }
-
-    if (avatarFile.size > 5 * 1024 * 1024) {
-      redirectWithProfileError("Profile picture must be smaller than 5MB.");
-    }
-
-    const extension = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-    const avatarPath = `${user.id}/avatar.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from("profile-avatars")
-      .upload(avatarPath, avatarFile, {
-        upsert: true,
-        contentType: avatarFile.type
-      });
-
-    if (uploadError) {
-      redirectWithProfileError(`Unable to upload profile picture: ${uploadError.message}`);
-    }
-
-    const {
-      data: { publicUrl }
-    } = supabase.storage.from("profile-avatars").getPublicUrl(avatarPath);
-    avatarUrl = `${publicUrl}?v=${Date.now()}`;
   }
 
   const { error: profileError } = await supabase.from("profiles").upsert({
@@ -92,8 +50,7 @@ export async function updateProfile(formData: FormData) {
     city: city || null,
     state: state || null,
     postal_code: postalCode || null,
-    country,
-    avatar_url: avatarUrl
+    country
   });
 
   if (profileError) redirectWithProfileError(`Unable to update profile: ${profileError.message}`);
@@ -108,9 +65,7 @@ export async function updateProfile(formData: FormData) {
       city: city || null,
       state: state || null,
       postal_code: postalCode || null,
-      country,
-      avatar_url: avatarUrl,
-      picture: avatarUrl
+      country
     }
   });
 

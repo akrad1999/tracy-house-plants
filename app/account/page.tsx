@@ -198,16 +198,6 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                   </label>
                 </div>
               </div>
-              <label className="grid gap-2">
-                <span className="text-sm font-black text-green-950">Profile picture</span>
-                <input
-                  name="avatarFile"
-                  type="file"
-                  accept="image/*"
-                  className="rounded-2xl border border-green-900/15 bg-[#fbf7ef] px-4 py-3 text-sm text-green-950 file:mr-4 file:rounded-full file:border-0 file:bg-green-950 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
-                />
-                <span className="text-xs text-green-950/55">JPG, PNG, WebP, or GIF under 5MB.</span>
-              </label>
               <button
                 type="submit"
                 className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-green-950 px-6 text-sm font-black text-white transition hover:bg-green-800 sm:w-auto"
