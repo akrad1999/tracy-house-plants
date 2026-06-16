@@ -45,22 +45,35 @@ export function CartContents() {
                   {item.inventory} available
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <label className="grid gap-1">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="grid gap-1">
                   <span className="text-xs font-black uppercase tracking-[0.2em] text-[#cb6843]">Qty</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={item.inventory}
-                    value={item.quantity}
-                    onChange={(event) => updateQuantity(item.plantId, Number(event.target.value))}
-                    className="h-11 w-20 rounded-2xl border border-[#c8ba7e]/20 bg-[#f6f2eb] px-3 text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
-                  />
-                </label>
+                  <div className="inline-flex items-center rounded-2xl border border-[#c8ba7e]/20 bg-[#f6f2eb] p-1">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.plantId, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                      aria-label={`Decrease ${item.name} quantity`}
+                      className="inline-flex size-9 items-center justify-center rounded-full text-lg font-black text-[#4e5026] transition hover:bg-white disabled:cursor-not-allowed disabled:text-[#49392c]/25"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-9 text-center text-sm font-black text-[#49392c]">{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.plantId, item.quantity + 1)}
+                      disabled={item.quantity >= item.inventory}
+                      aria-label={`Increase ${item.name} quantity`}
+                      className="inline-flex size-9 items-center justify-center rounded-full text-lg font-black text-[#4e5026] transition hover:bg-white disabled:cursor-not-allowed disabled:text-[#49392c]/25"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => removeItem(item.plantId)}
-                  className="mt-5 text-sm font-black text-red-700 underline-offset-4 hover:underline"
+                  className="min-h-11 rounded-full border border-red-700/20 px-4 text-sm font-black text-red-700 transition hover:border-red-700/50 hover:bg-red-50"
                 >
                   Remove
                 </button>

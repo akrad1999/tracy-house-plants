@@ -64,6 +64,7 @@ export function PlantCard({ plant }: PlantCardProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [hasAddedToCart, setHasAddedToCart] = useState(false);
   const { items } = useCart();
   const primaryImage = plant.images[0];
   const selectedImage = plant.images[selectedImageIndex] ?? primaryImage;
@@ -111,7 +112,14 @@ export function PlantCard({ plant }: PlantCardProps) {
   return (
     <>
       <article className="group rounded-xl bg-[#f6f2eb] p-2 shadow-md shadow-[#49392c]/10 ring-1 ring-[#c8ba7e]/45 transition hover:-translate-y-0.5 hover:shadow-lg">
-        <button type="button" onClick={() => setIsPreviewOpen(true)} className="block w-full text-left">
+        <button
+          type="button"
+          onClick={() => {
+            setHasAddedToCart(false);
+            setIsPreviewOpen(true);
+          }}
+          className="block w-full text-left"
+        >
           <div className="relative aspect-square overflow-hidden rounded-lg bg-[#c8ba7e]">
             {primaryImage ? (
               <Image
@@ -269,11 +277,28 @@ export function PlantCard({ plant }: PlantCardProps) {
               </div>
 
               <div className="mt-2 grid gap-2 sm:mt-3">
-                <AddToCartButton
-                  plant={cartPlant}
-                  quantity={selectedQuantity}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400"
-                />
+                {hasAddedToCart ? (
+                  <div className="grid grid-cols-[1fr_1.1fr] gap-2">
+                    <div className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#eef2df] px-3 text-sm font-black text-[#1f5a35]">
+                      <span aria-hidden="true">✓</span>
+                      Added to Cart
+                    </div>
+                    <Link
+                      href="/cart"
+                      className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#1f5a35] px-3 text-sm font-black text-white shadow-sm transition hover:bg-[#17472a]"
+                    >
+                      Checkout
+                    </Link>
+                  </div>
+                ) : (
+                  <AddToCartButton
+                    plant={cartPlant}
+                    quantity={selectedQuantity}
+                    onAdded={() => setHasAddedToCart(true)}
+                    showFloatingFeedback={false}
+                    className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400"
+                  />
+                )}
                 <div className="flex items-center justify-between gap-3 rounded-3xl bg-[#eef2df] p-3">
                   <div>
                     <p className="font-black text-[#4e5026]">Pickup in Tracy, CA</p>
