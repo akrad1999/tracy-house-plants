@@ -46,10 +46,6 @@ export default async function Home() {
                 priority
                 className="w-full object-cover"
               />
-              <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-[#f6f2eb]/90 p-4 text-[#4e5026] shadow-sm">
-                <p className="text-sm font-bold uppercase tracking-[0.2em]">Local pickup</p>
-                <p className="mt-1 text-lg font-black">Simple, healthy, homey.</p>
-              </div>
             </div>
           </div>
         </div>
@@ -59,7 +55,7 @@ export default async function Home() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#cb6843]">Fresh shelf</p>
-            <h2 className="mt-2 text-3xl font-black text-[#4e5026]">New this week</h2>
+            <h2 className="mt-2 text-3xl font-black text-[#4e5026]">Best Sellers</h2>
           </div>
           <Link href="/plants" className="text-sm font-black text-[#4e5026] underline-offset-4 hover:underline">
             See all
