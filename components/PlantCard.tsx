@@ -164,7 +164,7 @@ export function PlantCard({ plant }: PlantCardProps) {
               ×
             </button>
             <div
-              className="relative aspect-[6/4] max-h-44 overflow-hidden rounded-2xl bg-[#c8ba7e] sm:aspect-[4/3] sm:max-h-none sm:rounded-3xl"
+              className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#c8ba7e] sm:rounded-3xl"
               onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
               onTouchEnd={(event) => handleImageTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
             >
@@ -220,6 +220,22 @@ export function PlantCard({ plant }: PlantCardProps) {
                   <p className="mt-0.5 text-xs text-[#49392c]/65 sm:mt-1 sm:text-sm">{plant.botanicalName}</p>
                   <p className="mt-0.5 text-lg font-black text-[#cb6843] sm:mt-2 sm:text-2xl">{formatPrice(plant.price)}</p>
                 </div>
+                <div className="shrink-0 rounded-2xl bg-white/65 px-2.5 py-2">
+                  <p className={`flex items-center gap-1.5 text-xs font-black ${availableToAdd > 0 ? "text-[#4e5026]" : "text-gray-500"}`}>
+                    <span className={`size-2.5 rounded-full ${availableToAdd > 0 ? "bg-[#9ccc77]" : "bg-gray-400"}`} />
+                    {availableToAdd > 0 ? "In Stock" : "Sold Out"}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1.5 whitespace-nowrap text-xs text-[#49392c]/70">
+                    <SproutIcon className="size-4 text-[#4e5026]" />
+                    {availableToAdd > 0 ? (
+                      <>
+                        Only <span className="font-black text-[#cb6843]">{availableToAdd}</span> available
+                      </>
+                    ) : (
+                      "None available"
+                    )}
+                  </p>
+                </div>
               </div>
               <div className="mt-1.5 grid grid-cols-3 gap-1.5 sm:mt-2 sm:gap-2">
                 {[
@@ -233,23 +249,6 @@ export function PlantCard({ plant }: PlantCardProps) {
                   </div>
                 ))}
               </div>
-              <div className="mt-1.5 rounded-2xl bg-white/65 p-2.5 sm:mt-3 sm:rounded-3xl sm:p-3">
-                <p className={`flex items-center gap-2 text-sm font-black sm:text-base ${availableToAdd > 0 ? "text-[#4e5026]" : "text-gray-500"}`}>
-                  <span className={`size-3 rounded-full ${availableToAdd > 0 ? "bg-[#9ccc77]" : "bg-gray-400"}`} />
-                  {availableToAdd > 0 ? "In Stock" : "Sold Out"}
-                </p>
-                <p className="mt-1 flex items-center gap-2 text-sm text-[#49392c]/70 sm:mt-2">
-                  <SproutIcon className="size-5 text-[#4e5026]" />
-                  {availableToAdd > 0 ? (
-                    <>
-                      Only <span className="font-black text-[#cb6843]">{availableToAdd}</span> available
-                    </>
-                  ) : (
-                    "No more available for your cart"
-                  )}
-                </p>
-              </div>
-
               <div className="mt-1.5 grid gap-1 sm:mt-3 sm:gap-1.5">
                 <p className="text-sm font-bold text-[#49392c]/70">Quantity</p>
                 <div className="inline-flex w-32 items-center justify-between rounded-2xl border border-[#c8ba7e]/45 bg-white px-2 py-1 sm:w-40 sm:py-2">
