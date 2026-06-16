@@ -17,10 +17,13 @@ export function SignInSuccessToast() {
     cleanParams.delete("signed_in");
     const cleanQuery = cleanParams.toString();
     router.replace(`${pathname}${cleanQuery ? `?${cleanQuery}` : ""}`, { scroll: false });
+  }, [pathname, router, searchParams]);
 
+  useEffect(() => {
+    if (!isVisible) return;
     const timer = window.setTimeout(() => setIsVisible(false), 2000);
     return () => window.clearTimeout(timer);
-  }, [pathname, router, searchParams]);
+  }, [isVisible]);
 
   if (!isVisible) return null;
 

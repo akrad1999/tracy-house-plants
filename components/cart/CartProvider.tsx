@@ -129,7 +129,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems((currentItems) => currentItems.filter((item) => item.plantId !== plantId));
       },
       clearCart() {
-        setItems([]);
+        setItems((currentItems) => (currentItems.length === 0 ? currentItems : []));
       }
     };
   }, [items]);

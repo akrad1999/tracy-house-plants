@@ -27,3 +27,23 @@ body {
   background: #c8ba7e;
   color: #49392c;
 }
+
+button:not(:disabled),
+a[href] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled):active,
+a[href]:active {
+  filter: brightness(0.96);
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled),
+  a[href] {
+    transition-duration: 150ms;
+    transition-property: background-color, border-color, box-shadow, color, filter, opacity, transform;
+    transition-timing-function: ease-out;
+  }
+}

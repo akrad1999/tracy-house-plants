@@ -44,7 +44,7 @@ function CareIcon({ className = "size-5" }: { className?: string }) {
 
 function PickupPlantBox() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 88 88" className="size-16 shrink-0">
+    <svg aria-hidden="true" viewBox="0 0 88 88" className="size-12 shrink-0 sm:size-16">
       <path d="M24 37h40l6 10v25H18V47l6-10Z" fill="#d8b06a" />
       <path d="M18 47h52l-8 9H26l-8-9Z" fill="#c69a57" />
       <path d="M33 72V58h22v14" fill="#b38245" opacity=".55" />
@@ -154,7 +154,7 @@ export function PlantCard({ plant }: PlantCardProps) {
 
       {isPreviewOpen ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#49392c]/55 px-3 py-3 sm:px-4 sm:py-4">
-          <div className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-sm overflow-y-auto rounded-[1.5rem] bg-[#f6f2eb] p-3 shadow-2xl sm:max-w-md sm:rounded-[2rem] sm:p-4">
+          <div className="relative max-h-[calc(100dvh-1rem)] w-full max-w-sm overflow-y-auto rounded-[1.5rem] bg-[#f6f2eb] p-2.5 shadow-2xl sm:max-w-md sm:rounded-[2rem] sm:p-4">
             <button
               type="button"
               onClick={() => setIsPreviewOpen(false)}
@@ -164,7 +164,7 @@ export function PlantCard({ plant }: PlantCardProps) {
               ×
             </button>
             <div
-              className="relative aspect-[5/4] overflow-hidden rounded-2xl bg-[#c8ba7e] sm:aspect-[4/3] sm:rounded-3xl"
+              className="relative aspect-[6/4] max-h-44 overflow-hidden rounded-2xl bg-[#c8ba7e] sm:aspect-[4/3] sm:max-h-none sm:rounded-3xl"
               onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
               onTouchEnd={(event) => handleImageTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
             >
@@ -181,7 +181,7 @@ export function PlantCard({ plant }: PlantCardProps) {
                     type="button"
                     onClick={showPreviousImage}
                     aria-label="Show previous plant photo"
-                    className="absolute left-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-2xl font-black text-[#4e5026] shadow-md transition hover:bg-white"
+                    className="absolute left-2 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-2xl font-black text-[#4e5026] shadow-md transition hover:bg-white sm:left-3 sm:size-10"
                   >
                     ‹
                   </button>
@@ -189,7 +189,7 @@ export function PlantCard({ plant }: PlantCardProps) {
                     type="button"
                     onClick={showNextImage}
                     aria-label="Show next plant photo"
-                    className="absolute right-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-2xl font-black text-[#4e5026] shadow-md transition hover:bg-white"
+                    className="absolute right-2 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-2xl font-black text-[#4e5026] shadow-md transition hover:bg-white sm:right-3 sm:size-10"
                   >
                     ›
                   </button>
@@ -197,13 +197,13 @@ export function PlantCard({ plant }: PlantCardProps) {
               ) : null}
             </div>
             {plant.images.length > 1 ? (
-              <div className="mt-2 flex gap-2 sm:mt-3">
+              <div className="mt-1.5 flex gap-1.5 sm:mt-3 sm:gap-2">
                 {plant.images.slice(0, 3).map((image, index) => (
                   <button
                     key={image.src}
                     type="button"
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`relative size-14 overflow-hidden rounded-xl bg-[#c8ba7e] ring-2 transition sm:size-16 ${
+                    className={`relative size-10 overflow-hidden rounded-lg bg-[#c8ba7e] ring-2 transition sm:size-16 sm:rounded-xl ${
                       selectedImageIndex === index ? "ring-[#4e5026]" : "ring-transparent"
                     }`}
                     aria-label={`Show ${plant.name} photo ${index + 1}`}
@@ -213,33 +213,33 @@ export function PlantCard({ plant }: PlantCardProps) {
                 ))}
               </div>
             ) : null}
-            <div className="pt-2 sm:pt-3">
-              <div className="flex items-start justify-between gap-3 border-b border-[#c8ba7e]/25 pb-2 sm:pb-3">
+            <div className="pt-1.5 sm:pt-3">
+              <div className="flex items-start justify-between gap-3 border-b border-[#c8ba7e]/25 pb-1.5 sm:pb-3">
                 <div>
-                  <h2 className="pr-8 text-xl font-black text-[#4e5026] sm:text-2xl">{plant.name}</h2>
+                  <h2 className="pr-8 text-lg font-black text-[#4e5026] sm:text-2xl">{plant.name}</h2>
                   <p className="mt-0.5 text-xs text-[#49392c]/65 sm:mt-1 sm:text-sm">{plant.botanicalName}</p>
-                  <p className="mt-1 text-xl font-black text-[#cb6843] sm:mt-2 sm:text-2xl">{formatPrice(plant.price)}</p>
+                  <p className="mt-0.5 text-lg font-black text-[#cb6843] sm:mt-2 sm:text-2xl">{formatPrice(plant.price)}</p>
                 </div>
                 <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-black text-[#4e5026]">{plant.careLevel} care</span>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="mt-1.5 grid grid-cols-3 gap-1.5 sm:mt-2 sm:gap-2">
                 {[
                   { label: plant.light, icon: <LightIcon className="size-4" /> },
                   { label: plant.water, icon: <WaterIcon className="size-4" /> },
                   { label: `${plant.careLevel} Care`, icon: <CareIcon className="size-4" /> }
                 ].map((item) => (
-                  <div key={item.label} className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl bg-[#eef2df] px-2 py-2 text-center text-[11px] font-black leading-tight text-[#4e5026]">
+                  <div key={item.label} className="flex min-h-10 flex-col items-center justify-center gap-0.5 rounded-xl bg-[#eef2df] px-1.5 py-1.5 text-center text-[10px] font-black leading-tight text-[#4e5026] sm:min-h-12 sm:rounded-2xl sm:px-2 sm:py-2 sm:text-[11px]">
                     {item.icon}
                     <span>{item.label}</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-2 rounded-3xl bg-white/65 p-3 sm:mt-3">
-                <p className={`flex items-center gap-2 text-base font-black ${availableToAdd > 0 ? "text-[#4e5026]" : "text-gray-500"}`}>
+              <div className="mt-1.5 rounded-2xl bg-white/65 p-2.5 sm:mt-3 sm:rounded-3xl sm:p-3">
+                <p className={`flex items-center gap-2 text-sm font-black sm:text-base ${availableToAdd > 0 ? "text-[#4e5026]" : "text-gray-500"}`}>
                   <span className={`size-3 rounded-full ${availableToAdd > 0 ? "bg-[#9ccc77]" : "bg-gray-400"}`} />
                   {availableToAdd > 0 ? "In Stock" : "Sold Out"}
                 </p>
-                <p className="mt-2 flex items-center gap-2 text-sm text-[#49392c]/70">
+                <p className="mt-1 flex items-center gap-2 text-sm text-[#49392c]/70 sm:mt-2">
                   <SproutIcon className="size-5 text-[#4e5026]" />
                   {availableToAdd > 0 ? (
                     <>
@@ -251,9 +251,9 @@ export function PlantCard({ plant }: PlantCardProps) {
                 </p>
               </div>
 
-              <div className="mt-2 grid gap-1.5 sm:mt-3">
+              <div className="mt-1.5 grid gap-1 sm:mt-3 sm:gap-1.5">
                 <p className="text-sm font-bold text-[#49392c]/70">Quantity</p>
-                <div className="inline-flex w-36 items-center justify-between rounded-2xl border border-[#c8ba7e]/45 bg-white px-2 py-1.5 sm:w-40 sm:py-2">
+                <div className="inline-flex w-32 items-center justify-between rounded-2xl border border-[#c8ba7e]/45 bg-white px-2 py-1 sm:w-40 sm:py-2">
                   <button
                     type="button"
                     onClick={() => setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}
@@ -276,7 +276,7 @@ export function PlantCard({ plant }: PlantCardProps) {
                 </div>
               </div>
 
-              <div className="mt-2 grid gap-2 sm:mt-3">
+              <div className="mt-1.5 grid gap-1.5 sm:mt-3 sm:gap-2">
                 {hasAddedToCart ? (
                   <div className="grid grid-cols-[1fr_1.1fr] gap-2">
                     <div className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#eef2df] px-3 text-sm font-black text-[#1f5a35]">
@@ -296,13 +296,13 @@ export function PlantCard({ plant }: PlantCardProps) {
                     quantity={selectedQuantity}
                     onAdded={() => setHasAddedToCart(true)}
                     showFloatingFeedback={false}
-                    className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400 sm:min-h-12"
                   />
                 )}
-                <div className="flex items-center justify-between gap-3 rounded-3xl bg-[#eef2df] p-3">
+                <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#eef2df] p-2.5 sm:rounded-3xl sm:p-3">
                   <div>
                     <p className="font-black text-[#4e5026]">Pickup in Tracy, CA</p>
-                    <p className="mt-1 text-sm leading-5 text-[#49392c]/70">
+                    <p className="mt-0.5 text-xs leading-5 text-[#49392c]/70 sm:mt-1 sm:text-sm">
                       We&apos;ll text you to coordinate pickup.
                     </p>
                   </div>
@@ -311,7 +311,7 @@ export function PlantCard({ plant }: PlantCardProps) {
               </div>
               <Link
                 href={`/plants/${plant.slug}`}
-                className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 border-t border-[#c8ba7e]/25 pt-2 text-sm font-black text-[#4e5026] transition hover:text-[#49392c] sm:mt-3 sm:min-h-11 sm:pt-3"
+                className="mt-1.5 inline-flex min-h-9 w-full items-center justify-center gap-2 border-t border-[#c8ba7e]/25 pt-1.5 text-sm font-black text-[#4e5026] transition hover:text-[#49392c] sm:mt-3 sm:min-h-11 sm:pt-3"
               >
                 View full details <span aria-hidden="true">→</span>
               </Link>
