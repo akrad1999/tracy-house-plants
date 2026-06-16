@@ -18,14 +18,14 @@ export function SignInSuccessToast() {
     const cleanQuery = cleanParams.toString();
     router.replace(`${pathname}${cleanQuery ? `?${cleanQuery}` : ""}`, { scroll: false });
 
-    const timer = window.setTimeout(() => setIsVisible(false), 3500);
+    const timer = window.setTimeout(() => setIsVisible(false), 2000);
     return () => window.clearTimeout(timer);
   }, [pathname, router, searchParams]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed left-1/2 top-24 z-[120] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl bg-gradient-to-r from-[#1f5a35] via-[#4e7d3a] to-[#8ebf63] px-5 py-4 text-center text-sm font-black text-white shadow-2xl shadow-[#1f5a35]/25">
+    <div className="fixed left-1/2 top-24 z-[120] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl bg-gradient-to-r from-[#dff1dc] via-[#edf7df] to-[#f6f2eb] px-5 py-4 text-center text-sm font-black text-[#1f5a35] shadow-xl shadow-[#1f5a35]/10 ring-1 ring-[#8ebf63]/25">
       Successfully signed in.
     </div>
   );
