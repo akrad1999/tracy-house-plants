@@ -220,7 +220,6 @@ export function PlantCard({ plant }: PlantCardProps) {
                   <p className="mt-0.5 text-xs text-[#49392c]/65 sm:mt-1 sm:text-sm">{plant.botanicalName}</p>
                   <p className="mt-0.5 text-lg font-black text-[#cb6843] sm:mt-2 sm:text-2xl">{formatPrice(plant.price)}</p>
                 </div>
-                <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-black text-[#4e5026]">{plant.careLevel} care</span>
               </div>
               <div className="mt-1.5 grid grid-cols-3 gap-1.5 sm:mt-2 sm:gap-2">
                 {[
