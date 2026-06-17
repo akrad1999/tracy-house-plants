@@ -84,7 +84,7 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
 
     startTransition(async () => {
       const result = await savePickupSlot(formData);
-      setMessage(result.message);
+      setMessage(result.ok ? "" : result.message);
       if (result.ok && result.pickupDate && result.pickupTime) {
         setScheduledDate(result.pickupDate);
         setScheduledTime(result.pickupTime);
@@ -141,7 +141,7 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
               setIsCancelConfirming(false);
               setMessage("");
             }}
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c]"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#c8ba7e]/25 bg-white px-6 text-sm font-black text-[#4e5026] transition hover:border-[#4e5026]"
           >
             Change Pickup Time
           </button>

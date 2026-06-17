@@ -55,9 +55,6 @@ export function CheckoutButton() {
         {isLoading ? "Redirecting to Stripe..." : "Checkout"}
       </button>
       {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
-      <p className="mt-3 text-xs leading-5 text-[#49392c]/55">
-        Your order is saved after payment.
-      </p>
     </div>
   );
 }

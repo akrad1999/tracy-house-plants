@@ -301,7 +301,7 @@ export function PlantCard({ plant }: PlantCardProps) {
                   <div>
                     <p className="font-black text-[#4e5026]">Pickup in Tracy, CA</p>
                     <p className="mt-0.5 text-xs leading-5 text-[#49392c]/70 sm:mt-1 sm:text-sm">
-                      We&apos;ll text you to coordinate pickup.
+                      Select your pickup date and time after checkout.
                     </p>
                   </div>
                   <PickupPlantBox />

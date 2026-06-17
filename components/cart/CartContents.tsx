@@ -84,7 +84,7 @@ export function CartContents() {
       </div>
 
       <aside className="h-fit rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/60 p-6 shadow-sm">
-        <h2 className="text-2xl font-black text-[#4e5026]">Order summary</h2>
+        <h2 className="text-2xl font-black text-[#4e5026]">Order Summary</h2>
         <div className="mt-6 flex items-center justify-between border-t border-[#c8ba7e]/10 pt-5">
           <span className="text-sm font-black text-[#4e5026]">Subtotal</span>
           <span className="text-xl font-black text-[#4e5026]">{formatPrice(subtotal)}</span>
