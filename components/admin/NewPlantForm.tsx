@@ -36,6 +36,18 @@ type SignedUploadResponse = {
   }[];
 };
 
+type FallbackUploadResponse = {
+  ok: boolean;
+  message?: string;
+  stage?: string;
+  requestId?: string;
+  image?: {
+    index: number;
+    src: string;
+    storagePath: string;
+  };
+};
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -158,6 +170,31 @@ export function NewPlantForm() {
 
     startTransition(() => {
       void (async () => {
+        async function uploadImageThroughFallback(image: ImagePreview, index: number) {
+          const fallbackFormData = new FormData();
+          fallbackFormData.set("slug", slug);
+          fallbackFormData.set("index", String(index));
+          fallbackFormData.set("image", image.file);
+
+          const response = await fetch("/api/admin/plant-image-upload", {
+            method: "POST",
+            body: fallbackFormData
+          });
+          const result = (await response.json().catch(() => ({
+            ok: false,
+            message: `Fallback image upload failed with status ${response.status}.`,
+            stage: "response-parse"
+          }))) as FallbackUploadResponse;
+
+          if (!response.ok || !result.ok || !result.image) {
+            const debugSuffix =
+              result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
+            throw new Error(`${result.message ?? "Fallback image upload failed."}${debugSuffix}`);
+          }
+
+          return result.image;
+        }
+
         const uploadResponse = await fetch("/api/admin/plant-image-uploads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -189,7 +226,11 @@ export function NewPlantForm() {
           if (!image) throw new Error("Prepared image upload did not match selected images.");
 
           const { error: uploadError } = await supabase.storage.from("plant-images").uploadToSignedUrl(upload.path, upload.token, image.file);
-          if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+          if (uploadError) {
+            console.warn("Direct Supabase image upload failed; retrying through fallback route.", uploadError.message);
+            uploadedImages.push(await uploadImageThroughFallback(image, upload.index));
+            continue;
+          }
 
           uploadedImages.push({
             src: upload.publicUrl,
