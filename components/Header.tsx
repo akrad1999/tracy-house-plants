@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { User } from "@supabase/supabase-js";
 import { ProfileLink } from "@/components/auth/ProfileLink";
 import { CartLink } from "@/components/cart/CartLink";
+import { isApprovedAdminEmail } from "@/lib/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const navigation = [
@@ -14,12 +15,14 @@ const navigation = [
 type ProfileRow = {
   full_name: string | null;
   avatar_url: string | null;
+  role: string | null;
 };
 
 export async function Header() {
   let user: User | null = null;
 
   let profile: ProfileRow | null = null;
+  let isAdmin = false;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -30,8 +33,9 @@ export async function Header() {
     user = currentUser;
 
     if (user) {
-      const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).maybeSingle();
+      const { data } = await supabase.from("profiles").select("full_name, avatar_url, role").eq("id", user.id).maybeSingle();
       profile = data;
+      isAdmin = profile?.role === "admin" || isApprovedAdminEmail(user.email);
     }
   } catch {
     user = null;
@@ -93,6 +97,7 @@ export async function Header() {
           >
             <ProfileLink
               isSignedIn={Boolean(user)}
+              isAdmin={isAdmin}
               label={user ? `Profile for ${displayName}` : "Log in"}
               className="inline-flex size-11 items-center justify-center rounded-full border border-[#c8ba7e]/60 bg-white text-sm font-black text-[#4e5026] shadow-sm transition hover:border-[#4e5026]/50"
             >

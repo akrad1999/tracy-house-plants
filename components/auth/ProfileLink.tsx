@@ -6,12 +6,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type ProfileLinkProps = {
   isSignedIn: boolean;
+  isAdmin?: boolean;
   label: string;
   className: string;
   children: ReactNode;
 };
 
-export function ProfileLink({ isSignedIn, label, className, children }: ProfileLinkProps) {
+export function ProfileLink({ isSignedIn, isAdmin = false, label, className, children }: ProfileLinkProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -59,6 +60,15 @@ export function ProfileLink({ isSignedIn, label, className, children }: ProfileL
             >
               Orders
             </Link>
+            {isAdmin ? (
+              <Link
+                href="/admin"
+                onClick={() => setIsOpen(false)}
+                className="block border-t border-[#c8ba7e]/15 px-4 py-3 text-sm font-black text-[#4e5026] transition hover:bg-[#f6f2eb]"
+              >
+                Admin
+              </Link>
+            ) : null}
           </div>
         ) : null}
       </div>

@@ -1,26 +1,50 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { NewPlantForm } from "@/components/admin/NewPlantForm";
 import { PageHero } from "@/components/PageHero";
+import { isAdminUser } from "@/lib/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+type AdminPageProps = {
+  searchParams: Promise<{ created?: string; error?: string }>;
+};
 
 export const metadata: Metadata = {
   title: "Admin",
-  description: "Admin placeholder for Tracy House Plants."
+  description: "Create Tracy House Plants catalog listings."
 };
 
-export default function AdminPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
+  const { created, error } = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+
+  if (!user) redirect("/sign-in?next=/admin");
+  if (!(await isAdminUser(supabase, user))) redirect("/account");
+
   return (
     <>
       <PageHero
         eyebrow="Admin"
-        title="Admin tools will live here"
-        description="This placeholder maps the MVP admin workflow without exposing admin controls yet."
+        title="Create a new plant listing"
+        description="Upload plant photos and publish new catalog items directly to the storefront."
       />
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="rounded-[2rem] border border-green-900/10 bg-green-950 p-6 text-white shadow-sm sm:p-8">
-          <h2 className="text-2xl font-black">Planned admin dashboard</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-green-50/70">
-            Plant and order management will be protected before this page is linked publicly.
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        {created === "1" ? (
+          <p className="mb-5 rounded-2xl bg-green-100 px-4 py-3 text-sm font-black text-green-950">
+            Plant listing created. It is now available anywhere active plants are shown.
           </p>
-        </div>
+        ) : null}
+        {error ? (
+          <p className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-800">
+            {error}
+          </p>
+        ) : null}
+        <NewPlantForm />
       </section>
     </>
   );
