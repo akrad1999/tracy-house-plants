@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createPlantListing } from "@/app/admin/actions";
@@ -39,6 +38,12 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function getClientId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function NewPlantForm() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const imagesRef = useRef<ImagePreview[]>([]);
@@ -53,12 +58,16 @@ export function NewPlantForm() {
   }, [name, slugWasEdited]);
 
   useEffect(() => {
-    if (!imageInputRef.current) return;
+    if (!imageInputRef.current || typeof DataTransfer === "undefined") return;
 
-    const dataTransfer = new DataTransfer();
-    images.forEach((image) => dataTransfer.items.add(image.file));
-    imageInputRef.current.files = dataTransfer.files;
-    imagesRef.current = images;
+    try {
+      const dataTransfer = new DataTransfer();
+      images.forEach((image) => dataTransfer.items.add(image.file));
+      imageInputRef.current.files = dataTransfer.files;
+      imagesRef.current = images;
+    } catch {
+      imagesRef.current = images;
+    }
   }, [images]);
 
   useEffect(() => {
@@ -71,7 +80,7 @@ export function NewPlantForm() {
     if (!files) return;
 
     const selectedImages = Array.from(files).map((file) => ({
-      id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+      id: `${file.name}-${file.lastModified}-${getClientId()}`,
       file,
       url: URL.createObjectURL(file)
     }));
@@ -237,7 +246,7 @@ export function NewPlantForm() {
             {images.map((image, index) => (
               <div key={image.id} className="rounded-2xl bg-white p-3 shadow-sm">
                 <div className="relative h-36 overflow-hidden rounded-xl bg-[#c8ba7e]">
-                  <Image src={image.url} alt="" fill sizes="(min-width: 1024px) 240px, 50vw" className="object-cover" />
+                  <img src={image.url} alt="" className="h-full w-full object-cover" />
                 </div>
                 <label className="mt-3 flex items-center gap-2 text-sm font-black text-[#4e5026]">
                   <input
