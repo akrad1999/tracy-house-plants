@@ -57,7 +57,7 @@ function getCookieDomainAttribute() {
     : "";
 }
 
-function clearCartSnapshot() {
+export function clearCartSnapshot() {
   window.localStorage.removeItem(storageKey);
   document.cookie = `${cookieKey}=; path=/; max-age=0; SameSite=Lax`;
   document.cookie = `${cookieKey}=; path=/; max-age=0; SameSite=Lax${getCookieDomainAttribute()}`;
@@ -129,6 +129,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems((currentItems) => currentItems.filter((item) => item.plantId !== plantId));
       },
       clearCart() {
+        clearCartSnapshot();
         setItems((currentItems) => (currentItems.length === 0 ? currentItems : []));
       }
     };

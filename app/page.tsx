@@ -11,16 +11,28 @@ export default async function Home() {
   return (
     <>
       <section className="overflow-hidden">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[0.95fr_1.05fr] md:items-center lg:px-8 lg:py-16">
-          <div>
+        <div className="mx-auto max-w-4xl px-4 py-10 text-center sm:px-6 lg:px-8 lg:py-14">
+          <div className="mx-auto">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#cb6843]">Tracy, California</p>
             <h1 className="mt-4 text-4xl font-black tracking-tight text-[#4e5026] sm:text-6xl">
               Aunty&apos;s house plants.
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-[#49392c]/75">
+            <div className="mx-auto mt-6 w-full max-w-xs rounded-[2rem] border border-[#c8ba7e]/50 bg-[#f6f2eb]/70 p-3 shadow-xl shadow-[#49392c]/10 sm:max-w-sm">
+              <div className="relative overflow-hidden rounded-[1.5rem] bg-[#c8ba7e]">
+                <Image
+                  src="/auntys-plants-logo.png"
+                  alt="Aunty's Plants Tracy"
+                  width={520}
+                  height={520}
+                  priority
+                  className="w-full object-cover"
+                />
+              </div>
+            </div>
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-[#49392c]/75">
               Bringing a little more green into your home, one plant at a time. Every plant is carefully cared for and ready for its next home.
             </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 href="/plants"
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c]"
@@ -35,19 +47,6 @@ export default async function Home() {
               </Link>
             </div>
           </div>
-
-          <div className="rounded-[2rem] border border-[#c8ba7e]/50 bg-[#f6f2eb]/70 p-3 shadow-xl shadow-[#49392c]/10">
-            <div className="relative overflow-hidden rounded-[1.5rem] bg-[#c8ba7e]">
-              <Image
-                src="/auntys-plants-logo.png"
-                alt="Aunty's Plants Tracy"
-                width={900}
-                height={900}
-                priority
-                className="w-full object-cover"
-              />
-            </div>
-          </div>
         </div>
       </section>
 
@@ -57,7 +56,10 @@ export default async function Home() {
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#cb6843]">Fresh shelf</p>
             <h2 className="mt-2 text-3xl font-black text-[#4e5026]">Best Sellers</h2>
           </div>
-          <Link href="/plants" className="text-sm font-black text-[#4e5026] underline-offset-4 hover:underline">
+          <Link
+            href="/plants"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c]"
+          >
             See all
           </Link>
         </div>

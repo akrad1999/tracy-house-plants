@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useCart } from "@/components/cart/CartProvider";
+import { clearCartSnapshot, useCart } from "@/components/cart/CartProvider";
 
 export function ClearCartOnMount() {
   const { clearCart } = useCart();
@@ -10,6 +10,7 @@ export function ClearCartOnMount() {
   useEffect(() => {
     if (hasCleared.current) return;
     hasCleared.current = true;
+    clearCartSnapshot();
     clearCart();
   }, [clearCart]);
 

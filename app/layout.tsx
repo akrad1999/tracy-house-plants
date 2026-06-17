@@ -28,14 +28,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${openSans.variable} ${openSans.className}`}>
+      <body className={`${openSans.variable} ${openSans.className} min-h-screen`}>
         <CartProvider>
-          <div className="flex min-h-screen flex-col">
+          <div className="flex min-h-screen flex-col bg-[#f6f2eb]">
             <Header />
             <Suspense fallback={null}>
               <SignInSuccessToast />
             </Suspense>
-            <main className="flex-1">{children}</main>
+            <main className="grow">{children}</main>
             <Footer />
           </div>
         </CartProvider>
