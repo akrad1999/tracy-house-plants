@@ -27,6 +27,8 @@ type OrderItemRow = {
 type OrderRow = {
   id: string;
   stripe_session_id: string | null;
+  status: string;
+  pickup_status: string;
   total_cents: number;
   created_at: string;
   pickup_date: string | null;
@@ -44,6 +46,8 @@ async function getOrder(sessionId?: string) {
       `
       id,
       stripe_session_id,
+      status,
+      pickup_status,
       total_cents,
       created_at,
       pickup_date,
@@ -122,7 +126,15 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[1fr_1.05fr]">
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
+            <PickupScheduler
+              orderId={order.id}
+              orderCreatedAt={order.created_at}
+              savedPickupDate={order.pickup_date}
+              savedPickupTime={order.pickup_time}
+              isCancelled={order.status === "cancelled" || order.pickup_status === "Cancelled"}
+            />
+
             <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/60 p-6 shadow-sm sm:p-8">
               <h1 className="text-2xl font-black text-[#4e5026]">Order received.</h1>
               <p className="mt-3 text-sm leading-6 text-[#49392c]/65">
@@ -160,13 +172,6 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
                 <span className="text-xl font-black text-[#4e5026]">{formatPrice(order.total_cents / 100)}</span>
               </div>
             </div>
-
-            <PickupScheduler
-              orderId={order.id}
-              orderCreatedAt={order.created_at}
-              savedPickupDate={order.pickup_date}
-              savedPickupTime={order.pickup_time}
-            />
           </div>
         )}
 

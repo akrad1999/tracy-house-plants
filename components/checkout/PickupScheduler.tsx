@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { savePickupSlot } from "@/app/checkout/success/actions";
+import { cancelOrder, savePickupSlot } from "@/app/checkout/success/actions";
 
 type PickupSchedulerProps = {
   orderId: string;
   orderCreatedAt: string;
   savedPickupDate?: string | null;
   savedPickupTime?: string | null;
+  isCancelled?: boolean;
 };
 
 function toDateInputValue(date: Date) {
@@ -56,18 +57,22 @@ function buildSlots(createdAt: string, dateValue: string) {
   return slots;
 }
 
-export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, savedPickupTime }: PickupSchedulerProps) {
+export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, savedPickupTime, isCancelled = false }: PickupSchedulerProps) {
   const days = useMemo(() => buildDays(orderCreatedAt), [orderCreatedAt]);
   const [selectedDate, setSelectedDate] = useState(savedPickupDate ?? toDateInputValue(days[0]));
   const slots = useMemo(() => buildSlots(orderCreatedAt, selectedDate), [orderCreatedAt, selectedDate]);
-  const [selectedTime, setSelectedTime] = useState(savedPickupTime ?? slots[0] ?? "");
+  const [selectedTime, setSelectedTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
+  const [scheduledDate, setScheduledDate] = useState(savedPickupDate ?? "");
+  const [scheduledTime, setScheduledTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(!savedPickupDate || !savedPickupTime);
+  const [isCancelConfirming, setIsCancelConfirming] = useState(false);
+  const [isOrderCancelled, setIsOrderCancelled] = useState(isCancelled);
   const [message, setMessage] = useState(savedPickupDate && savedPickupTime ? "Pickup time is scheduled." : "");
   const [isPending, startTransition] = useTransition();
 
   function handleDateChange(date: string) {
-    const nextSlots = buildSlots(orderCreatedAt, date);
     setSelectedDate(date);
-    setSelectedTime(nextSlots[0] ?? "");
+    setSelectedTime("");
     setMessage("");
   }
 
@@ -80,7 +85,102 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
     startTransition(async () => {
       const result = await savePickupSlot(formData);
       setMessage(result.message);
+      if (result.ok && result.pickupDate && result.pickupTime) {
+        setScheduledDate(result.pickupDate);
+        setScheduledTime(result.pickupTime);
+        setIsCalendarOpen(false);
+        setIsCancelConfirming(false);
+      }
     });
+  }
+
+  function cancelSelection() {
+    const formData = new FormData();
+    formData.set("orderId", orderId);
+
+    startTransition(async () => {
+      const result = await cancelOrder(formData);
+      setMessage(result.message);
+      if (result.ok) {
+        setIsOrderCancelled(true);
+        setIsCalendarOpen(false);
+        setIsCancelConfirming(false);
+      }
+    });
+  }
+
+  const scheduledLabel =
+    scheduledDate && scheduledTime
+      ? `${formatDayLabel(new Date(`${scheduledDate}T00:00:00`))} at ${formatSlotLabel(scheduledTime)}`
+      : "";
+
+  if (isOrderCancelled) {
+    return (
+      <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/70 p-5 text-center shadow-sm">
+        <h2 className="text-xl font-black text-[#4e5026]">Order cancelled</h2>
+        <p className="mt-3 text-sm leading-6 text-[#49392c]/65">
+          Your card will be refunded in 3-5 business days.
+        </p>
+        {message ? <p className="mt-4 rounded-2xl bg-[#eef2df] px-4 py-3 text-sm font-black text-[#4e5026]">{message}</p> : null}
+      </div>
+    );
+  }
+
+  if (!isCalendarOpen && scheduledLabel) {
+    return (
+      <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/70 p-5 shadow-sm">
+        <h2 className="text-xl font-black text-[#4e5026]">Thanks for scheduling your pickup</h2>
+        <p className="mt-3 rounded-2xl bg-[#eef2df] px-4 py-3 text-sm font-black text-[#4e5026]">
+          Pickup scheduled for {scheduledLabel}.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCalendarOpen(true);
+              setIsCancelConfirming(false);
+              setMessage("");
+            }}
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c]"
+          >
+            Change Pickup Time
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsCancelConfirming(true)}
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-red-700/25 bg-white px-6 text-sm font-black text-red-700 transition hover:bg-red-50"
+          >
+            Cancel Order
+          </button>
+        </div>
+        {isCancelConfirming ? (
+          <div className="mt-5 rounded-3xl border border-red-700/15 bg-red-50 p-4">
+            <p className="text-sm font-black text-red-800">Confirm cancel?</p>
+            <p className="mt-2 text-sm leading-6 text-red-800/75">
+              This will cancel your order. Your card will be refunded manually through Stripe in 3-5 business days.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={cancelSelection}
+                disabled={isPending}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-red-700 px-5 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-gray-400"
+              >
+                {isPending ? "Cancelling..." : "Yes, cancel order"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCancelConfirming(false)}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-black text-[#4e5026]"
+              >
+                Keep order
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {message ? <p className="mt-3 text-center text-sm font-black text-[#4e5026]">{message}</p> : null}
+      </div>
+    );
   }
 
   return (
