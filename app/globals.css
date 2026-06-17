@@ -46,4 +46,27 @@ a[href]:active {
     transition-property: background-color, border-color, box-shadow, color, filter, opacity, transform;
     transition-timing-function: ease-out;
   }
+
+  .animate-date-nudge {
+    animation: date-nudge 420ms ease-in-out;
+  }
+}
+
+@keyframes date-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
 }

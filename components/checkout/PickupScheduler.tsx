@@ -59,8 +59,9 @@ function buildSlots(createdAt: string, dateValue: string) {
 
 export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, savedPickupTime, isCancelled = false }: PickupSchedulerProps) {
   const days = useMemo(() => buildDays(orderCreatedAt), [orderCreatedAt]);
-  const [selectedDate, setSelectedDate] = useState(savedPickupDate ?? toDateInputValue(days[0]));
-  const slots = useMemo(() => buildSlots(orderCreatedAt, selectedDate), [orderCreatedAt, selectedDate]);
+  const firstDate = toDateInputValue(days[0]);
+  const [selectedDate, setSelectedDate] = useState(savedPickupDate ?? "");
+  const slots = useMemo(() => buildSlots(orderCreatedAt, selectedDate || firstDate), [firstDate, orderCreatedAt, selectedDate]);
   const [selectedTime, setSelectedTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
   const [scheduledDate, setScheduledDate] = useState(savedPickupDate ?? "");
   const [scheduledTime, setScheduledTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
@@ -68,12 +69,20 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
   const [isCancelConfirming, setIsCancelConfirming] = useState(false);
   const [isOrderCancelled, setIsOrderCancelled] = useState(isCancelled);
   const [message, setMessage] = useState(savedPickupDate && savedPickupTime ? "Pickup time is scheduled." : "");
+  const [shouldShakeDates, setShouldShakeDates] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleDateChange(date: string) {
     setSelectedDate(date);
     setSelectedTime("");
     setMessage("");
+    setShouldShakeDates(false);
+  }
+
+  function promptDateFirst() {
+    setShouldShakeDates(true);
+    setMessage("Select a pickup date first.");
+    window.setTimeout(() => setShouldShakeDates(false), 450);
   }
 
   function saveSelection() {
@@ -187,10 +196,10 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
     <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/70 p-5 shadow-sm">
       <h2 className="text-xl font-black text-[#4e5026]">Schedule pickup</h2>
       <p className="mt-2 text-sm leading-6 text-[#49392c]/65">
-        Choose any available 30-minute pickup slot from 8:00 AM to 6:00 PM. All shown times are currently available.
+        Pick a date first, then choose any available 30-minute pickup slot from 8:00 AM to 6:00 PM. All shown times are currently available.
       </p>
 
-      <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+      <div className={`mt-5 flex gap-2 overflow-x-auto pb-2 ${shouldShakeDates ? "animate-date-nudge" : ""}`}>
         {days.slice(0, 3).map((day) => {
           const value = toDateInputValue(day);
           return (
@@ -215,6 +224,9 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
           onChange={(event) => handleDateChange(event.target.value)}
           className="min-h-11 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
         >
+          <option value="" disabled>
+            Select a pickup date
+          </option>
           {days.map((day) => {
             const value = toDateInputValue(day);
             return (
@@ -236,11 +248,15 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
                   key={slot}
                   type="button"
                   onClick={() => {
+                    if (!selectedDate) {
+                      promptDateFirst();
+                      return;
+                    }
                     setSelectedTime(slot);
                     setMessage("");
                   }}
                   className={`rounded-xl px-3 py-2 text-sm font-black transition ${
-                    selectedTime === slot ? "bg-[#4e5026] text-white" : "bg-white text-[#4e5026]"
+                    selectedDate && selectedTime === slot ? "bg-[#4e5026] text-white" : "bg-white text-[#4e5026]"
                   }`}
                 >
                   {formatSlotLabel(slot)}
@@ -256,7 +272,7 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
       <button
         type="button"
         onClick={saveSelection}
-        disabled={!selectedTime || isPending}
+        disabled={!selectedDate || !selectedTime || isPending}
         className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400"
       >
         {isPending ? "Saving..." : "Save pickup time"}
