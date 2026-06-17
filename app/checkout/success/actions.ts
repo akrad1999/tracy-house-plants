@@ -172,5 +172,5 @@ export async function cancelOrder(formData: FormData): Promise<CancelOrderResult
   revalidatePath("/checkout/success");
   revalidatePath("/account");
 
-  return { ok: true, message: "Order has been cancelled. Your card will be refunded in 3-5 business days." };
+  return { ok: true, message: "Your order has been cancelled. Your card will be refunded in 3-5 business days." };
 }

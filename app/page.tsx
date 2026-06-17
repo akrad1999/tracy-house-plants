@@ -60,7 +60,7 @@ export default async function Home() {
             href="/plants"
             className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#4e5026] px-5 text-sm font-black text-[#f6f2eb] transition hover:bg-[#49392c]"
           >
-            See all
+            See All
           </Link>
         </div>
         {featuredPlants.length > 0 ? (

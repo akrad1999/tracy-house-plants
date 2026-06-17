@@ -81,7 +81,7 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
 
   function promptDateFirst() {
     setShouldShakeDates(true);
-    setMessage("Select a pickup date first.");
+    setMessage("Select a pickup date first!");
     window.setTimeout(() => setShouldShakeDates(false), 450);
   }
 

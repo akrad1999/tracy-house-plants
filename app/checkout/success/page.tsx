@@ -136,9 +136,9 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
             />
 
             <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/60 p-6 shadow-sm sm:p-8">
-              <h1 className="text-2xl font-black text-[#4e5026]">Order received.</h1>
+              <h1 className="text-2xl font-black text-[#4e5026]">Order Placed</h1>
               <p className="mt-3 text-sm leading-6 text-[#49392c]/65">
-                Please choose a pickup time. All displayed slots are currently available.
+                Thank you for supporting your local small business! We can&apos;t wait for you to pick up your new plants.
               </p>
 
               <div className="mt-6 grid gap-3">
@@ -149,7 +149,7 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
                       <div>
                         <h2 className="font-black text-[#4e5026]">{item.plant_name}</h2>
                         <p className="mt-1 text-sm font-bold text-[#49392c]/65">
-                          {item.quantity} x plant
+                          {item.quantity}x plant
                         </p>
                         <p className="mt-1 text-sm font-black text-[#cb6843]">{formatPrice(item.line_total_cents / 100)}</p>
                       </div>
@@ -168,7 +168,7 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
               </div>
 
               <div className="mt-6 flex items-center justify-between border-t border-[#c8ba7e]/15 pt-5">
-                <span className="text-sm font-black text-[#4e5026]">Amount paid</span>
+                <span className="text-sm font-black text-[#4e5026]">Amount Paid</span>
                 <span className="text-xl font-black text-[#4e5026]">{formatPrice(order.total_cents / 100)}</span>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
               href="/account"
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c]"
             >
-              View Orders
+              View All Orders
             </Link>
             <Link
               href="/plants"

@@ -26,7 +26,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <div className="rounded-[2rem] border border-green-900/10 bg-white p-6 shadow-sm sm:p-8">
           <h1 className="text-2xl font-black text-green-950">Welcome back</h1>
           <p className="mt-3 text-sm leading-6 text-green-950/65">
-            Sign in securely with your preferred account. No password is stored by Tracy House Plants.
+            Sign in securely with your preferred account.
           </p>
           {error ? (
             <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{error}</p>
