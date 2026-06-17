@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { cancelOrder, savePickupSlot } from "@/app/checkout/success/actions";
+import { buildPickupDays, buildPickupSlots, formatDayLabel, formatSlotLabel, getBlackoutSlotKey, toDateInputValue } from "@/lib/pickup";
 
 type PickupSchedulerProps = {
   orderId: string;
@@ -9,59 +10,22 @@ type PickupSchedulerProps = {
   savedPickupDate?: string | null;
   savedPickupTime?: string | null;
   isCancelled?: boolean;
+  blockedSlots?: string[];
 };
 
-function toDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function formatDayLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(date);
-}
-
-function formatSlotLabel(time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date);
-}
-
-function buildDays(createdAt: string) {
-  const start = new Date(createdAt);
-  start.setDate(start.getDate() + 1);
-  start.setHours(0, 0, 0, 0);
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    return date;
-  });
-}
-
-function buildSlots(createdAt: string, dateValue: string) {
-  const orderCreatedAt = new Date(createdAt);
-  const earliestPickup = new Date(orderCreatedAt.getTime() + 12 * 60 * 60 * 1000);
-  const slots: string[] = [];
-
-  for (let hour = 8; hour <= 18; hour += 1) {
-    for (const minute of [0, 30]) {
-      if (hour === 18 && minute === 30) continue;
-
-      const slot = new Date(`${dateValue}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`);
-      if (slot >= earliestPickup) {
-        slots.push(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-      }
-    }
-  }
-
-  return slots;
-}
-
-export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, savedPickupTime, isCancelled = false }: PickupSchedulerProps) {
-  const days = useMemo(() => buildDays(orderCreatedAt), [orderCreatedAt]);
+export function PickupScheduler({
+  orderId,
+  orderCreatedAt,
+  savedPickupDate,
+  savedPickupTime,
+  isCancelled = false,
+  blockedSlots = []
+}: PickupSchedulerProps) {
+  const days = useMemo(() => buildPickupDays(orderCreatedAt), [orderCreatedAt]);
   const firstDate = toDateInputValue(days[0]);
   const [selectedDate, setSelectedDate] = useState(savedPickupDate ?? "");
-  const slots = useMemo(() => buildSlots(orderCreatedAt, selectedDate || firstDate), [firstDate, orderCreatedAt, selectedDate]);
+  const slots = useMemo(() => buildPickupSlots(orderCreatedAt, selectedDate || firstDate), [firstDate, orderCreatedAt, selectedDate]);
+  const blockedSet = useMemo(() => new Set(blockedSlots), [blockedSlots]);
   const [selectedTime, setSelectedTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
   const [scheduledDate, setScheduledDate] = useState(savedPickupDate ?? "");
   const [scheduledTime, setScheduledTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
@@ -243,25 +207,35 @@ export function PickupScheduler({ orderId, orderCreatedAt, savedPickupDate, save
         <div className="mt-3 max-h-52 overflow-y-auto rounded-2xl border border-[#c8ba7e]/15 bg-[#f6f2eb] p-3">
           {slots.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {slots.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => {
-                    if (!selectedDate) {
-                      promptDateFirst();
-                      return;
-                    }
-                    setSelectedTime(slot);
-                    setMessage("");
-                  }}
-                  className={`rounded-xl px-3 py-2 text-sm font-black transition ${
-                    selectedDate && selectedTime === slot ? "bg-[#4e5026] text-white" : "bg-white text-[#4e5026]"
-                  }`}
-                >
-                  {formatSlotLabel(slot)}
-                </button>
-              ))}
+              {slots.map((slot) => {
+                const isBlocked = selectedDate ? blockedSet.has(getBlackoutSlotKey(selectedDate, slot)) : false;
+
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    disabled={isBlocked}
+                    onClick={() => {
+                      if (!selectedDate) {
+                        promptDateFirst();
+                        return;
+                      }
+                      if (isBlocked) return;
+                      setSelectedTime(slot);
+                      setMessage("");
+                    }}
+                    className={`rounded-xl px-3 py-2 text-sm font-black transition disabled:cursor-not-allowed ${
+                      isBlocked
+                        ? "bg-gray-200 text-gray-400"
+                        : selectedDate && selectedTime === slot
+                          ? "bg-[#4e5026] text-white"
+                          : "bg-white text-[#4e5026]"
+                    }`}
+                  >
+                    {formatSlotLabel(slot)}
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm font-bold text-[#49392c]/65">No pickup slots remain for this day. Choose another day.</p>

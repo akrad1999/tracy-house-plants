@@ -75,6 +75,16 @@ export async function savePickupSlot(formData: FormData): Promise<SavePickupResu
   }
 
   const serviceSupabase = createSupabaseServiceRoleClient();
+  const { data: blockedSlot, error: blockedSlotError } = await serviceSupabase
+    .from("pickup_blackout_slots")
+    .select("id")
+    .eq("pickup_date", pickupDate)
+    .eq("pickup_time", pickupTime)
+    .maybeSingle();
+
+  if (blockedSlotError) return { ok: false, message: blockedSlotError.message };
+  if (blockedSlot) return { ok: false, message: "Choose another pickup time." };
+
   const { error: updateError } = await serviceSupabase
     .from("orders")
     .update({

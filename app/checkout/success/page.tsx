@@ -5,6 +5,7 @@ import { ClearCartOnMount } from "@/components/cart/ClearCartOnMount";
 import { PickupScheduler } from "@/components/checkout/PickupScheduler";
 import { PageHero } from "@/components/PageHero";
 import { formatPrice } from "@/lib/plants";
+import { getBlackoutSlotKey, getPickupWindowDateValues } from "@/lib/pickup";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
 export const metadata: Metadata = {
@@ -90,10 +91,21 @@ async function getFeaturedImages(items: OrderItemRow[]) {
   return imageByPlantId;
 }
 
+async function getBlockedPickupSlots(createdAt: string) {
+  const dateValues = getPickupWindowDateValues(createdAt);
+  const supabase = createSupabaseServiceRoleClient();
+  const { data, error } = await supabase.from("pickup_blackout_slots").select("pickup_date, pickup_time").in("pickup_date", dateValues);
+
+  if (error) throw new Error(`Unable to load pickup availability: ${error.message}`);
+
+  return (data ?? []).map((slot) => getBlackoutSlotKey(slot.pickup_date, String(slot.pickup_time)));
+}
+
 export default async function CheckoutSuccessPage({ searchParams }: CheckoutSuccessPageProps) {
   const { session_id: sessionId } = await searchParams;
   const order = await getOrder(sessionId);
   const imageByPlantId = order ? await getFeaturedImages(order.order_items) : new Map<string, { src: string; alt: string }>();
+  const blockedPickupSlots = order ? await getBlockedPickupSlots(order.created_at) : [];
 
   return (
     <>
@@ -133,6 +145,7 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
               savedPickupDate={order.pickup_date}
               savedPickupTime={order.pickup_time}
               isCancelled={order.status === "cancelled" || order.pickup_status === "Cancelled"}
+              blockedSlots={blockedPickupSlots}
             />
 
             <div className="rounded-[1.5rem] border border-[#c8ba7e]/15 bg-white/60 p-6 shadow-sm sm:p-8">
