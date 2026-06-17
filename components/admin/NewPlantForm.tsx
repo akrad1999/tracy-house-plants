@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const careLevels = ["Easy", "Moderate", "Hard"];
 const lightOptions = ["Low Light", "Bright Indirect", "Direct Sun"];
@@ -21,6 +22,18 @@ type CreatePlantResponse = {
   stage?: string;
   requestId?: string;
   slug?: string;
+};
+
+type SignedUploadResponse = {
+  ok: boolean;
+  message?: string;
+  requestId?: string;
+  uploads?: {
+    index: number;
+    path: string;
+    token: string;
+    publicUrl: string;
+  }[];
 };
 
 function slugify(value: string) {
@@ -124,20 +137,81 @@ export function NewPlantForm() {
       return;
     }
 
-    formData.delete("images");
-    images.forEach((image) => formData.append("images", image.file));
+    const plantPayload = {
+      name: String(formData.get("name") ?? ""),
+      slug,
+      botanicalName: String(formData.get("botanicalName") ?? ""),
+      priceCents: String(formData.get("priceCents") ?? ""),
+      shortDescription: String(formData.get("shortDescription") ?? ""),
+      description: String(formData.get("description") ?? ""),
+      careLevel: String(formData.get("careLevel") ?? ""),
+      light: String(formData.get("light") ?? ""),
+      water: String(formData.get("water") ?? ""),
+      size: String(formData.get("size") ?? ""),
+      inventory: String(formData.get("inventory") ?? ""),
+      potSize: String(formData.get("potSize") ?? ""),
+      humidity: String(formData.get("humidity") ?? ""),
+      featured: formData.get("featured") === "on",
+      active: formData.get("active") === "on",
+      featuredImageIndex
+    };
 
     startTransition(() => {
-      void fetch("/api/admin/plants", {
-        method: "POST",
-        body: formData
-      })
-        .then(async (response) => {
-          const result = (await response.json().catch(() => ({
-            ok: false,
-            message: `Upload failed with status ${response.status}.`,
-            stage: "response-parse"
-          }))) as CreatePlantResponse;
+      void (async () => {
+        const uploadResponse = await fetch("/api/admin/plant-image-uploads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug,
+            files: images.map((image, index) => ({
+              name: image.file.name,
+              type: image.file.type,
+              size: image.file.size,
+              index
+            }))
+          })
+        });
+
+        const uploadResult = (await uploadResponse.json().catch(() => ({
+          ok: false,
+          message: `Unable to prepare image upload URLs. Status ${uploadResponse.status}.`
+        }))) as SignedUploadResponse;
+
+        if (!uploadResponse.ok || !uploadResult.ok || !uploadResult.uploads) {
+          throw new Error(`${uploadResult.message ?? "Unable to prepare image upload URLs."} (request: ${uploadResult.requestId ?? "unknown"})`);
+        }
+
+        const supabase = createSupabaseBrowserClient();
+        const uploadedImages = [];
+
+        for (const upload of uploadResult.uploads.sort((a, b) => a.index - b.index)) {
+          const image = images[upload.index];
+          if (!image) throw new Error("Prepared image upload did not match selected images.");
+
+          const { error: uploadError } = await supabase.storage.from("plant-images").uploadToSignedUrl(upload.path, upload.token, image.file);
+          if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+
+          uploadedImages.push({
+            src: upload.publicUrl,
+            storagePath: upload.path,
+            index: upload.index
+          });
+        }
+
+        const response = await fetch("/api/admin/plants", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...plantPayload,
+            images: uploadedImages
+          })
+        });
+
+        const result = (await response.json().catch(() => ({
+          ok: false,
+          message: `Plant creation failed with status ${response.status}.`,
+          stage: "response-parse"
+        }))) as CreatePlantResponse;
           const debugSuffix =
             result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
 
@@ -149,7 +223,7 @@ export function NewPlantForm() {
           if (result.ok) {
             router.refresh();
           }
-        })
+      })()
         .catch((error) => {
           setResultMessage({
             type: "error",
