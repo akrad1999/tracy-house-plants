@@ -37,6 +37,27 @@ function getClientId() {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function getMissingFieldMessage(formData: FormData) {
+  const requiredFields = [
+    ["name", "Name"],
+    ["slug", "Slug"],
+    ["botanicalName", "Botanical Name"],
+    ["priceCents", "Price Cents"],
+    ["shortDescription", "Short Description"],
+    ["description", "Description"],
+    ["size", "Size"],
+    ["inventory", "Inventory"]
+  ];
+
+  for (const [fieldName, label] of requiredFields) {
+    if (!String(formData.get(fieldName) ?? "").trim()) {
+      return `${label} is required.`;
+    }
+  }
+
+  return "";
+}
+
 export function NewPlantForm() {
   const router = useRouter();
   const imagesRef = useRef<ImagePreview[]>([]);
@@ -91,12 +112,18 @@ export function NewPlantForm() {
     event.preventDefault();
     setResultMessage(null);
 
+    const formData = new FormData(event.currentTarget);
+    const missingFieldMessage = getMissingFieldMessage(formData);
+    if (missingFieldMessage) {
+      setResultMessage({ type: "error", text: missingFieldMessage });
+      return;
+    }
+
     if (images.length === 0) {
       setResultMessage({ type: "error", text: "Upload at least one plant image." });
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
     formData.delete("images");
     images.forEach((image) => formData.append("images", image.file));
 
@@ -133,7 +160,7 @@ export function NewPlantForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6 rounded-[2rem] border border-[#c8ba7e]/20 bg-white p-5 shadow-sm sm:p-8">
+    <form noValidate onSubmit={handleSubmit} className="grid gap-6 rounded-[2rem] border border-[#c8ba7e]/20 bg-white p-5 shadow-sm sm:p-8">
       <div>
         <h2 className="text-2xl font-black text-[#4e5026]">Upload New Plant</h2>
         <p className="mt-2 text-sm leading-6 text-[#49392c]/65">
@@ -156,7 +183,6 @@ export function NewPlantForm() {
           <span className="text-sm font-black text-[#4e5026]">Name</span>
           <input
             name="name"
-            required
             value={name}
             onChange={(event) => setName(event.target.value)}
             className="min-h-12 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
@@ -166,7 +192,6 @@ export function NewPlantForm() {
           <span className="text-sm font-black text-[#4e5026]">Slug</span>
           <input
             name="slug"
-            required
             value={slug}
             onChange={(event) => {
               setSlugWasEdited(true);
@@ -179,7 +204,6 @@ export function NewPlantForm() {
           <span className="text-sm font-black text-[#4e5026]">Botanical Name</span>
           <input
             name="botanicalName"
-            required
             className="min-h-12 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
           />
         </label>
@@ -189,7 +213,6 @@ export function NewPlantForm() {
             name="priceCents"
             type="number"
             min={0}
-            required
             placeholder="125"
             className="min-h-12 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
           />
@@ -200,7 +223,6 @@ export function NewPlantForm() {
         <span className="text-sm font-black text-[#4e5026]">Short Description</span>
         <input
           name="shortDescription"
-          required
           className="min-h-12 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
         />
       </label>
@@ -209,7 +231,6 @@ export function NewPlantForm() {
         <span className="text-sm font-black text-[#4e5026]">Description</span>
         <textarea
           name="description"
-          required
           rows={5}
           className="rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 py-3 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
         />
@@ -244,7 +265,6 @@ export function NewPlantForm() {
           <span className="text-sm font-black text-[#4e5026]">Size</span>
           <input
             name="size"
-            required
             placeholder="4 inch nursery pot"
             className="min-h-12 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
           />
@@ -255,7 +275,6 @@ export function NewPlantForm() {
             name="inventory"
             type="number"
             min={0}
-            required
             className="min-h-12 rounded-2xl border border-[#c8ba7e]/25 bg-[#f6f2eb] px-4 text-sm font-bold text-[#49392c] outline-none focus:border-[#4e5026] focus:ring-4 focus:ring-[#4e5026]/10"
           />
         </label>
@@ -281,7 +300,7 @@ export function NewPlantForm() {
 
       <div className="grid gap-3 rounded-3xl bg-[#f6f2eb] p-4">
         <p className="text-sm font-black text-[#4e5026]">Images</p>
-        <input type="file" accept="image/*" multiple required onChange={(event) => handleImageSelection(event.target.files)} />
+        <input type="file" accept="image/*" multiple onChange={(event) => handleImageSelection(event.target.files)} />
         <input type="hidden" name="featuredImageIndex" value={featuredImageIndex} />
         {images.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
