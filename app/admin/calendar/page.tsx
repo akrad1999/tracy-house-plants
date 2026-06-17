@@ -65,7 +65,6 @@ export default async function AdminCalendarPage() {
           Back to Admin
         </Link>
         <PickupCalendarManager
-          windowCreatedAt={windowCreatedAt}
           days={days}
           blockedSlots={blockedSlots}
           occupiedSlots={occupiedSlots}
