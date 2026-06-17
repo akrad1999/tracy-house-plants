@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { createPlantListing } from "@/app/admin/actions";
 
 const careLevels = ["Easy", "Moderate", "Hard"];
@@ -15,20 +14,6 @@ type ImagePreview = {
   file: File;
   url: string;
 };
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400 sm:w-auto"
-    >
-      {pending ? "Creating listing..." : "Create plant listing"}
-    </button>
-  );
-}
 
 function slugify(value: string) {
   return value
@@ -45,29 +30,20 @@ function getClientId() {
 }
 
 export function NewPlantForm() {
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const imagesRef = useRef<ImagePreview[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugWasEdited, setSlugWasEdited] = useState(false);
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [featuredImageIndex, setFeaturedImageIndex] = useState(0);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!slugWasEdited) setSlug(slugify(name));
   }, [name, slugWasEdited]);
 
   useEffect(() => {
-    if (!imageInputRef.current || typeof DataTransfer === "undefined") return;
-
-    try {
-      const dataTransfer = new DataTransfer();
-      images.forEach((image) => dataTransfer.items.add(image.file));
-      imageInputRef.current.files = dataTransfer.files;
-      imagesRef.current = images;
-    } catch {
-      imagesRef.current = images;
-    }
+    imagesRef.current = images;
   }, [images]);
 
   useEffect(() => {
@@ -85,14 +61,15 @@ export function NewPlantForm() {
       url: URL.createObjectURL(file)
     }));
 
-    setImages((currentImages) => [...currentImages, ...selectedImages]);
+    setImages(selectedImages);
+    setFeaturedImageIndex(0);
   }
 
   function removeImage(indexToRemove: number) {
     setImages((currentImages) => {
       const imageToRemove = currentImages[indexToRemove];
       if (imageToRemove) URL.revokeObjectURL(imageToRemove.url);
-      return currentImages.filter((_, index) => index !== indexToRemove);
+      return currentImages.map((image, index) => (index === indexToRemove ? null : image)).filter(Boolean) as ImagePreview[];
     });
     setFeaturedImageIndex((currentIndex) => {
       if (currentIndex === indexToRemove) return 0;
@@ -100,8 +77,20 @@ export function NewPlantForm() {
     });
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    formData.delete("images");
+    images.forEach((image) => formData.append("images", image.file));
+
+    startTransition(() => {
+      void createPlantListing(formData);
+    });
+  }
+
   return (
-    <form action={createPlantListing} className="grid gap-6 rounded-[2rem] border border-[#c8ba7e]/20 bg-white p-5 shadow-sm sm:p-8">
+    <form onSubmit={handleSubmit} className="grid gap-6 rounded-[2rem] border border-[#c8ba7e]/20 bg-white p-5 shadow-sm sm:p-8">
       <div>
         <h2 className="text-2xl font-black text-[#4e5026]">Upload New Plant</h2>
         <p className="mt-2 text-sm leading-6 text-[#49392c]/65">
@@ -239,7 +228,7 @@ export function NewPlantForm() {
 
       <div className="grid gap-3 rounded-3xl bg-[#f6f2eb] p-4">
         <p className="text-sm font-black text-[#4e5026]">Images</p>
-        <input ref={imageInputRef} name="images" type="file" accept="image/*" multiple required onChange={(event) => handleImageSelection(event.target.files)} />
+        <input type="file" accept="image/*" multiple required onChange={(event) => handleImageSelection(event.target.files)} />
         <input type="hidden" name="featuredImageIndex" value={featuredImageIndex} />
         {images.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -277,7 +266,13 @@ export function NewPlantForm() {
         </label>
       </div>
 
-      <SubmitButton />
+      <button
+        type="submit"
+        disabled={isPending}
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400 sm:w-auto"
+      >
+        {isPending ? "Creating listing..." : "Create plant listing"}
+      </button>
     </form>
   );
 }
