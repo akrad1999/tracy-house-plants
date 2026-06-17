@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
-import { createPlantListing } from "@/app/admin/actions";
 
 const careLevels = ["Easy", "Moderate", "Hard"];
 const lightOptions = ["Low Light", "Bright Indirect", "Direct Sun"];
@@ -14,6 +13,14 @@ type ImagePreview = {
   id: string;
   file: File;
   url: string;
+};
+
+type CreatePlantResponse = {
+  ok: boolean;
+  message: string;
+  stage?: string;
+  requestId?: string;
+  slug?: string;
 };
 
 function slugify(value: string) {
@@ -94,9 +101,24 @@ export function NewPlantForm() {
     images.forEach((image) => formData.append("images", image.file));
 
     startTransition(() => {
-      void createPlantListing(formData)
-        .then((result) => {
-          setResultMessage({ type: result.ok ? "success" : "error", text: result.message });
+      void fetch("/api/admin/plants", {
+        method: "POST",
+        body: formData
+      })
+        .then(async (response) => {
+          const result = (await response.json().catch(() => ({
+            ok: false,
+            message: `Upload failed with status ${response.status}.`,
+            stage: "response-parse"
+          }))) as CreatePlantResponse;
+          const debugSuffix =
+            result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
+
+          setResultMessage({
+            type: result.ok ? "success" : "error",
+            text: `${result.message}${result.ok ? "" : debugSuffix}`
+          });
+
           if (result.ok) {
             router.refresh();
           }

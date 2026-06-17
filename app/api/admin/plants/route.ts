@@ -1,10 +1,12 @@
-"use server";
-
+import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { isAdminUser } from "@/lib/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 const careLevels = ["Easy", "Moderate", "Hard"] as const;
 const lightOptions = ["Low Light", "Bright Indirect", "Direct Sun"] as const;
@@ -14,11 +16,30 @@ const humidityOptions = ["Low Humidity", "Moderate Humidity", "High Humidity"] a
 const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const maxImageSize = 10 * 1024 * 1024;
 
-type CreatePlantListingResult = {
+type AdminCreatePlantResponse = {
   ok: boolean;
   message: string;
+  stage: string;
+  requestId: string;
   slug?: string;
 };
+
+function jsonResponse(response: AdminCreatePlantResponse, status = 200) {
+  return NextResponse.json(response, { status });
+}
+
+function logInfo(requestId: string, stage: string, details: Record<string, unknown> = {}) {
+  console.info("[admin-create-plant]", { requestId, stage, ...details });
+}
+
+function logError(requestId: string, stage: string, error: unknown, details: Record<string, unknown> = {}) {
+  console.error("[admin-create-plant]", {
+    requestId,
+    stage,
+    error: error instanceof Error ? error.message : String(error),
+    ...details
+  });
+}
 
 function getRequiredString(formData: FormData, name: string) {
   const value = String(formData.get(name) ?? "").trim();
@@ -51,16 +72,29 @@ function sanitizeFileName(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9.]+/g, "-");
 }
 
-export async function createPlantListing(formData: FormData): Promise<CreatePlantListingResult> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
-
-  if (!user) redirect("/sign-in?next=/admin");
-  if (!(await isAdminUser(supabase, user))) redirect("/account");
+export async function POST(request: Request) {
+  const requestId = crypto.randomUUID();
+  let stage = "start";
 
   try {
+    stage = "auth";
+    logInfo(requestId, stage);
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user }
+    } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+
+    if (!user) {
+      return jsonResponse({ ok: false, message: "Please sign in before using admin tools.", stage, requestId }, 401);
+    }
+
+    if (!(await isAdminUser(supabase, user))) {
+      return jsonResponse({ ok: false, message: "This account is not authorized for admin tools.", stage, requestId }, 403);
+    }
+
+    stage = "parse-form";
+    logInfo(requestId, stage);
+    const formData = await request.formData();
     const name = getRequiredString(formData, "name");
     const slug = slugify(getRequiredString(formData, "slug"));
     const botanicalName = getRequiredString(formData, "botanicalName");
@@ -83,6 +117,7 @@ export async function createPlantListing(formData: FormData): Promise<CreatePlan
     if (priceCents < 0) throw new Error("Price cents must be 0 or greater.");
     if (inventory < 0) throw new Error("Inventory must be 0 or greater.");
     if (images.length === 0) throw new Error("Upload at least one plant image.");
+
     const featuredImageIndex = Math.min(requestedFeaturedImageIndex, images.length - 1);
 
     for (const image of images) {
@@ -90,7 +125,18 @@ export async function createPlantListing(formData: FormData): Promise<CreatePlan
       if (image.size > maxImageSize) throw new Error("Each image must be 10MB or smaller.");
     }
 
+    logInfo(requestId, "validated", {
+      slug,
+      imageCount: images.length,
+      imageSizes: images.map((image) => image.size),
+      featuredImageIndex
+    });
+
+    stage = "service-client";
     const serviceSupabase = createSupabaseServiceRoleClient();
+
+    stage = "insert-plant";
+    logInfo(requestId, stage, { slug });
     const { data: plant, error: plantError } = await serviceSupabase
       .from("plants")
       .insert({
@@ -119,32 +165,37 @@ export async function createPlantListing(formData: FormData): Promise<CreatePlan
     const uploadedPaths: string[] = [];
 
     try {
-      const imageRows = await Promise.all(
-        images.map(async (image, index) => {
-          const filePath = `${slug}/${Date.now()}-${index}-${sanitizeFileName(image.name)}`;
-          const { error: uploadError } = await serviceSupabase.storage.from("plant-images").upload(filePath, image, {
-            contentType: image.type,
-            upsert: false
-          });
+      stage = "upload-images";
+      const imageRows = [];
 
-          if (uploadError) throw new Error(uploadError.message);
-          uploadedPaths.push(filePath);
+      for (const [index, image] of images.entries()) {
+        const filePath = `${slug}/${Date.now()}-${index}-${sanitizeFileName(image.name)}`;
+        logInfo(requestId, stage, { filePath, size: image.size, type: image.type });
+        const { error: uploadError } = await serviceSupabase.storage.from("plant-images").upload(filePath, image, {
+          contentType: image.type,
+          upsert: false
+        });
 
-          const { data: publicUrl } = serviceSupabase.storage.from("plant-images").getPublicUrl(filePath);
-          const sortOrder = index === featuredImageIndex ? 0 : index < featuredImageIndex ? index + 1 : index;
+        if (uploadError) throw new Error(uploadError.message);
+        uploadedPaths.push(filePath);
 
-          return {
-            plant_id: plant.id,
-            src: publicUrl.publicUrl,
-            alt: `${name} plant photo ${index + 1}`,
-            sort_order: sortOrder
-          };
-        })
-      );
+        const { data: publicUrl } = serviceSupabase.storage.from("plant-images").getPublicUrl(filePath);
+        const sortOrder = index === featuredImageIndex ? 0 : index < featuredImageIndex ? index + 1 : index;
 
+        imageRows.push({
+          plant_id: plant.id,
+          src: publicUrl.publicUrl,
+          alt: `${name} plant photo ${index + 1}`,
+          sort_order: sortOrder
+        });
+      }
+
+      stage = "insert-image-rows";
+      logInfo(requestId, stage, { imageRows: imageRows.length });
       const { error: imageError } = await serviceSupabase.from("plant_images").insert(imageRows);
       if (imageError) throw new Error(imageError.message);
     } catch (error) {
+      logError(requestId, stage, error, { slug, uploadedPaths });
       if (uploadedPaths.length > 0) {
         await serviceSupabase.storage.from("plant-images").remove(uploadedPaths);
       }
@@ -152,13 +203,23 @@ export async function createPlantListing(formData: FormData): Promise<CreatePlan
       throw error;
     }
 
+    stage = "revalidate";
     revalidatePath("/");
     revalidatePath("/plants");
     revalidatePath(`/plants/${plant.slug}`);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to create plant listing.";
-    return { ok: false, message };
-  }
+    logInfo(requestId, "success", { slug });
 
-  return { ok: true, message: "Plant listing created." };
+    return jsonResponse({ ok: true, message: "Plant listing created.", stage: "success", requestId, slug });
+  } catch (error) {
+    logError(requestId, stage, error);
+    return jsonResponse(
+      {
+        ok: false,
+        message: error instanceof Error ? error.message : "Unable to create plant listing.",
+        stage,
+        requestId
+      },
+      500
+    );
+  }
 }
