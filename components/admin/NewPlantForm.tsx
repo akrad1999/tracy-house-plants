@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { createPlantListing } from "@/app/admin/actions";
 
@@ -30,12 +31,14 @@ function getClientId() {
 }
 
 export function NewPlantForm() {
+  const router = useRouter();
   const imagesRef = useRef<ImagePreview[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugWasEdited, setSlugWasEdited] = useState(false);
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [featuredImageIndex, setFeaturedImageIndex] = useState(0);
+  const [resultMessage, setResultMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -79,13 +82,31 @@ export function NewPlantForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setResultMessage(null);
+
+    if (images.length === 0) {
+      setResultMessage({ type: "error", text: "Upload at least one plant image." });
+      return;
+    }
 
     const formData = new FormData(event.currentTarget);
     formData.delete("images");
     images.forEach((image) => formData.append("images", image.file));
 
     startTransition(() => {
-      void createPlantListing(formData);
+      void createPlantListing(formData)
+        .then((result) => {
+          setResultMessage({ type: result.ok ? "success" : "error", text: result.message });
+          if (result.ok) {
+            router.refresh();
+          }
+        })
+        .catch((error) => {
+          setResultMessage({
+            type: "error",
+            text: error instanceof Error ? error.message : "Unable to create plant listing."
+          });
+        });
     });
   }
 
@@ -97,6 +118,16 @@ export function NewPlantForm() {
           Add the catalog details, upload plant photos, and choose which photo should appear first on the storefront.
         </p>
       </div>
+
+      {resultMessage ? (
+        <p
+          className={`rounded-2xl px-4 py-3 text-sm font-black ${
+            resultMessage.type === "success" ? "bg-green-100 text-green-950" : "bg-red-50 text-red-800"
+          }`}
+        >
+          {resultMessage.text}
+        </p>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2">

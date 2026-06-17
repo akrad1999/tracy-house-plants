@@ -14,6 +14,12 @@ const humidityOptions = ["Low Humidity", "Moderate Humidity", "High Humidity"] a
 const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const maxImageSize = 10 * 1024 * 1024;
 
+type CreatePlantListingResult = {
+  ok: boolean;
+  message: string;
+  slug?: string;
+};
+
 function getRequiredString(formData: FormData, name: string) {
   const value = String(formData.get(name) ?? "").trim();
   if (!value) throw new Error(`${name} is required.`);
@@ -45,7 +51,7 @@ function sanitizeFileName(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9.]+/g, "-");
 }
 
-export async function createPlantListing(formData: FormData) {
+export async function createPlantListing(formData: FormData): Promise<CreatePlantListingResult> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
@@ -151,8 +157,8 @@ export async function createPlantListing(formData: FormData) {
     revalidatePath(`/plants/${plant.slug}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create plant listing.";
-    redirect(`/admin?error=${encodeURIComponent(message)}`);
+    return { ok: false, message };
   }
 
-  redirect("/admin?created=1");
+  return { ok: true, message: "Plant listing created." };
 }
