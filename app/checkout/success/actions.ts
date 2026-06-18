@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { buildPickupDays, buildPickupSlots, normalizePickupTime, parsePickupSlotDate, toDateInputValue, toPickupTimeValue } from "@/lib/pickup";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
@@ -18,36 +19,20 @@ type CancelOrderResult = {
 
 const validTimePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-function getSlotDateTime(date: string, time: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !validTimePattern.test(time)) return null;
-  return new Date(`${date}T${time}:00`);
-}
-
 function isValidPickupSlot(createdAt: string, pickupDate: string, pickupTime: string) {
-  const orderCreatedAt = new Date(createdAt);
-  const slot = getSlotDateTime(pickupDate, pickupTime);
+  const normalizedTime = normalizePickupTime(pickupTime);
+  if (!validTimePattern.test(normalizedTime)) return false;
 
-  if (!slot || Number.isNaN(orderCreatedAt.getTime()) || Number.isNaN(slot.getTime())) return false;
+  const allowedDays = buildPickupDays(createdAt).map(toDateInputValue);
+  if (!allowedDays.includes(pickupDate)) return false;
 
-  const earliestPickup = new Date(orderCreatedAt.getTime() + 12 * 60 * 60 * 1000);
-  const nextDayStart = new Date(orderCreatedAt);
-  nextDayStart.setDate(nextDayStart.getDate() + 1);
-  nextDayStart.setHours(0, 0, 0, 0);
-
-  const latestPickup = new Date(nextDayStart);
-  latestPickup.setDate(latestPickup.getDate() + 7);
-  latestPickup.setHours(18, 0, 0, 0);
-
-  const hours = slot.getHours();
-  const minutes = slot.getMinutes();
-
-  return slot >= earliestPickup && slot >= nextDayStart && slot <= latestPickup && hours >= 8 && hours <= 18 && (minutes === 0 || minutes === 30);
+  return buildPickupSlots(createdAt, pickupDate).includes(normalizedTime);
 }
 
 export async function savePickupSlot(formData: FormData): Promise<SavePickupResult> {
   const orderId = String(formData.get("orderId") ?? "");
   const pickupDate = String(formData.get("pickupDate") ?? "");
-  const pickupTime = String(formData.get("pickupTime") ?? "");
+  const pickupTime = normalizePickupTime(String(formData.get("pickupTime") ?? ""));
 
   if (!orderId || !pickupDate || !pickupTime) {
     return { ok: false, message: "Choose a pickup date and time." };
@@ -75,21 +60,24 @@ export async function savePickupSlot(formData: FormData): Promise<SavePickupResu
   }
 
   const serviceSupabase = createSupabaseServiceRoleClient();
-  const { data: blockedSlot, error: blockedSlotError } = await serviceSupabase
+  const { data: blackoutSlots, error: blockedSlotError } = await serviceSupabase
     .from("pickup_blackout_slots")
-    .select("id")
-    .eq("pickup_date", pickupDate)
-    .eq("pickup_time", pickupTime)
-    .maybeSingle();
+    .select("id, pickup_time")
+    .eq("pickup_date", pickupDate);
 
   if (blockedSlotError) return { ok: false, message: blockedSlotError.message };
-  if (blockedSlot) return { ok: false, message: "Choose another pickup time." };
 
+  const isBlocked = (blackoutSlots ?? []).some(
+    (slot) => normalizePickupTime(String(slot.pickup_time)) === pickupTime
+  );
+  if (isBlocked) return { ok: false, message: "Choose another pickup time." };
+
+  const pickupTimeValue = toPickupTimeValue(pickupTime);
   const { error: updateError } = await serviceSupabase
     .from("orders")
     .update({
       pickup_date: pickupDate,
-      pickup_time: pickupTime,
+      pickup_time: pickupTimeValue,
       pickup_scheduled_at: new Date().toISOString()
     })
     .eq("id", orderId);
@@ -141,8 +129,8 @@ export async function cancelOrder(formData: FormData): Promise<CancelOrderResult
   }
 
   if (order.pickup_date && order.pickup_time) {
-    const pickupTime = String(order.pickup_time).slice(0, 5);
-    const pickupDateTime = getSlotDateTime(order.pickup_date, pickupTime);
+    const pickupTime = normalizePickupTime(String(order.pickup_time));
+    const pickupDateTime = parsePickupSlotDate(order.pickup_date, pickupTime);
     if (pickupDateTime && pickupDateTime <= new Date()) {
       return { ok: false, message: "This order can no longer be cancelled because the pickup time has passed." };
     }

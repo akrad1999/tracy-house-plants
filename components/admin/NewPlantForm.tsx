@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 const careLevels = ["Easy", "Moderate", "Hard"];
 const lightOptions = ["Low Light", "Bright Indirect", "Direct Sun"];
@@ -22,18 +21,6 @@ type CreatePlantResponse = {
   stage?: string;
   requestId?: string;
   slug?: string;
-};
-
-type SignedUploadResponse = {
-  ok: boolean;
-  message?: string;
-  requestId?: string;
-  uploads?: {
-    index: number;
-    path: string;
-    token: string;
-    publicUrl: string;
-  }[];
 };
 
 type FallbackUploadResponse = {
@@ -92,7 +79,7 @@ export function NewPlantForm() {
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [featuredImageIndex, setFeaturedImageIndex] = useState(0);
   const [resultMessage, setResultMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!slugWasEdited) setSlug(slugify(name));
@@ -133,8 +120,34 @@ export function NewPlantForm() {
     });
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function uploadImageThroughServer(image: ImagePreview, index: number) {
+    const fallbackFormData = new FormData();
+    fallbackFormData.set("slug", slug);
+    fallbackFormData.set("index", String(index));
+    fallbackFormData.set("image", image.file);
+
+    const response = await fetch("/api/admin/plant-image-upload", {
+      method: "POST",
+      body: fallbackFormData
+    });
+    const result = (await response.json().catch(() => ({
+      ok: false,
+      message: `Image upload failed with status ${response.status}.`,
+      stage: "response-parse"
+    }))) as FallbackUploadResponse;
+
+    if (!response.ok || !result.ok || !result.image) {
+      const debugSuffix =
+        result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
+      throw new Error(`${result.message ?? "Image upload failed."}${debugSuffix}`);
+    }
+
+    return result.image;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setResultMessage(null);
 
     const formData = new FormData(event.currentTarget);
@@ -168,110 +181,47 @@ export function NewPlantForm() {
       featuredImageIndex
     };
 
-    startTransition(() => {
-      void (async () => {
-        async function uploadImageThroughFallback(image: ImagePreview, index: number) {
-          const fallbackFormData = new FormData();
-          fallbackFormData.set("slug", slug);
-          fallbackFormData.set("index", String(index));
-          fallbackFormData.set("image", image.file);
+    setIsSubmitting(true);
 
-          const response = await fetch("/api/admin/plant-image-upload", {
-            method: "POST",
-            body: fallbackFormData
-          });
-          const result = (await response.json().catch(() => ({
-            ok: false,
-            message: `Fallback image upload failed with status ${response.status}.`,
-            stage: "response-parse"
-          }))) as FallbackUploadResponse;
+    try {
+      const uploadedImages = [];
+      for (let index = 0; index < images.length; index += 1) {
+        uploadedImages.push(await uploadImageThroughServer(images[index], index));
+      }
 
-          if (!response.ok || !result.ok || !result.image) {
-            const debugSuffix =
-              result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
-            throw new Error(`${result.message ?? "Fallback image upload failed."}${debugSuffix}`);
-          }
+      const response = await fetch("/api/admin/plants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...plantPayload,
+          images: uploadedImages
+        })
+      });
 
-          return result.image;
-        }
+      const result = (await response.json().catch(() => ({
+        ok: false,
+        message: `Plant creation failed with status ${response.status}.`,
+        stage: "response-parse"
+      }))) as CreatePlantResponse;
+      const debugSuffix =
+        result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
 
-        const uploadResponse = await fetch("/api/admin/plant-image-uploads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug,
-            files: images.map((image, index) => ({
-              name: image.file.name,
-              type: image.file.type,
-              size: image.file.size,
-              index
-            }))
-          })
-        });
+      setResultMessage({
+        type: result.ok ? "success" : "error",
+        text: `${result.message}${result.ok ? "" : debugSuffix}`
+      });
 
-        const uploadResult = (await uploadResponse.json().catch(() => ({
-          ok: false,
-          message: `Unable to prepare image upload URLs. Status ${uploadResponse.status}.`
-        }))) as SignedUploadResponse;
-
-        if (!uploadResponse.ok || !uploadResult.ok || !uploadResult.uploads) {
-          throw new Error(`${uploadResult.message ?? "Unable to prepare image upload URLs."} (request: ${uploadResult.requestId ?? "unknown"})`);
-        }
-
-        const supabase = createSupabaseBrowserClient();
-        const uploadedImages = [];
-
-        for (const upload of uploadResult.uploads.sort((a, b) => a.index - b.index)) {
-          const image = images[upload.index];
-          if (!image) throw new Error("Prepared image upload did not match selected images.");
-
-          const { error: uploadError } = await supabase.storage.from("plant-images").uploadToSignedUrl(upload.path, upload.token, image.file);
-          if (uploadError) {
-            console.warn("Direct Supabase image upload failed; retrying through fallback route.", uploadError.message);
-            uploadedImages.push(await uploadImageThroughFallback(image, upload.index));
-            continue;
-          }
-
-          uploadedImages.push({
-            src: upload.publicUrl,
-            storagePath: upload.path,
-            index: upload.index
-          });
-        }
-
-        const response = await fetch("/api/admin/plants", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...plantPayload,
-            images: uploadedImages
-          })
-        });
-
-        const result = (await response.json().catch(() => ({
-          ok: false,
-          message: `Plant creation failed with status ${response.status}.`,
-          stage: "response-parse"
-        }))) as CreatePlantResponse;
-          const debugSuffix =
-            result.stage || result.requestId ? ` (stage: ${result.stage ?? "unknown"}, request: ${result.requestId ?? "unknown"})` : "";
-
-          setResultMessage({
-            type: result.ok ? "success" : "error",
-            text: `${result.message}${result.ok ? "" : debugSuffix}`
-          });
-
-          if (result.ok) {
-            router.refresh();
-          }
-      })()
-        .catch((error) => {
-          setResultMessage({
-            type: "error",
-            text: error instanceof Error ? error.message : "Unable to create plant listing."
-          });
-        });
-    });
+      if (result.ok) {
+        router.refresh();
+      }
+    } catch (error) {
+      setResultMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Unable to create plant listing."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -455,10 +405,10 @@ export function NewPlantForm() {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isSubmitting}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400 sm:w-auto"
       >
-        {isPending ? "Creating listing..." : "Create plant listing"}
+        {isSubmitting ? "Creating listing..." : "Create plant listing"}
       </button>
     </form>
   );

@@ -2,7 +2,16 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { cancelOrder, savePickupSlot } from "@/app/checkout/success/actions";
-import { buildPickupDays, buildPickupSlots, formatDayLabel, formatSlotLabel, getBlackoutSlotKey, toDateInputValue } from "@/lib/pickup";
+import {
+  buildPickupDays,
+  buildPickupSlots,
+  formatDayLabel,
+  formatSlotLabel,
+  getBlackoutSlotKey,
+  normalizePickupTime,
+  parsePickupSlotDate,
+  toDateInputValue
+} from "@/lib/pickup";
 
 type PickupSchedulerProps = {
   orderId: string;
@@ -22,49 +31,68 @@ export function PickupScheduler({
   blockedSlots = []
 }: PickupSchedulerProps) {
   const days = useMemo(() => buildPickupDays(orderCreatedAt), [orderCreatedAt]);
-  const firstDate = toDateInputValue(days[0]);
   const [selectedDate, setSelectedDate] = useState(savedPickupDate ?? "");
-  const slots = useMemo(() => buildPickupSlots(orderCreatedAt, selectedDate || firstDate), [firstDate, orderCreatedAt, selectedDate]);
+  const slots = useMemo(
+    () => (selectedDate ? buildPickupSlots(orderCreatedAt, selectedDate) : []),
+    [orderCreatedAt, selectedDate]
+  );
   const blockedSet = useMemo(() => new Set(blockedSlots), [blockedSlots]);
-  const [selectedTime, setSelectedTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
+  const [selectedTime, setSelectedTime] = useState(savedPickupTime ? normalizePickupTime(savedPickupTime) : "");
   const [scheduledDate, setScheduledDate] = useState(savedPickupDate ?? "");
-  const [scheduledTime, setScheduledTime] = useState(savedPickupTime ? savedPickupTime.slice(0, 5) : "");
+  const [scheduledTime, setScheduledTime] = useState(savedPickupTime ? normalizePickupTime(savedPickupTime) : "");
   const [isCalendarOpen, setIsCalendarOpen] = useState(!savedPickupDate || !savedPickupTime);
   const [isCancelConfirming, setIsCancelConfirming] = useState(false);
   const [isOrderCancelled, setIsOrderCancelled] = useState(isCancelled);
   const [message, setMessage] = useState(savedPickupDate && savedPickupTime ? "Pickup time is scheduled." : "");
-  const [shouldShakeDates, setShouldShakeDates] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const canSave = Boolean(selectedDate && selectedTime && !isSaving);
+  const selectionLabel =
+    selectedDate && selectedTime
+      ? `${formatDayLabel(parsePickupSlotDate(selectedDate, "12:00") ?? new Date(`${selectedDate}T12:00:00`))} at ${formatSlotLabel(selectedTime)}`
+      : "";
 
   function handleDateChange(date: string) {
     setSelectedDate(date);
     setSelectedTime("");
     setMessage("");
-    setShouldShakeDates(false);
   }
 
-  function promptDateFirst() {
-    setShouldShakeDates(true);
-    setMessage("Select a pickup date first!");
-    window.setTimeout(() => setShouldShakeDates(false), 450);
-  }
+  async function saveSelection() {
+    if (!selectedDate || !selectedTime || isSaving) return;
 
-  function saveSelection() {
+    const dateToSave = selectedDate;
+    const timeToSave = selectedTime;
+    const previousDate = scheduledDate;
+    const previousTime = scheduledTime;
+    const wasCalendarOpen = isCalendarOpen;
+
+    setIsSaving(true);
+    setMessage("");
+    setScheduledDate(dateToSave);
+    setScheduledTime(timeToSave);
+    setIsCalendarOpen(false);
+    setIsCancelConfirming(false);
+
     const formData = new FormData();
     formData.set("orderId", orderId);
-    formData.set("pickupDate", selectedDate);
-    formData.set("pickupTime", selectedTime);
+    formData.set("pickupDate", dateToSave);
+    formData.set("pickupTime", timeToSave);
 
-    startTransition(async () => {
-      const result = await savePickupSlot(formData);
-      setMessage(result.ok ? "" : result.message);
-      if (result.ok && result.pickupDate && result.pickupTime) {
-        setScheduledDate(result.pickupDate);
-        setScheduledTime(result.pickupTime);
-        setIsCalendarOpen(false);
-        setIsCancelConfirming(false);
-      }
-    });
+    const result = await savePickupSlot(formData);
+    setIsSaving(false);
+
+    if (!result.ok) {
+      setScheduledDate(previousDate);
+      setScheduledTime(previousTime);
+      setIsCalendarOpen(wasCalendarOpen || !previousDate || !previousTime);
+      setMessage(result.message);
+      return;
+    }
+
+    setScheduledDate(result.pickupDate ?? dateToSave);
+    setScheduledTime(normalizePickupTime(result.pickupTime ?? timeToSave));
   }
 
   function cancelSelection() {
@@ -84,7 +112,7 @@ export function PickupScheduler({
 
   const scheduledLabel =
     scheduledDate && scheduledTime
-      ? `${formatDayLabel(new Date(`${scheduledDate}T00:00:00`))} at ${formatSlotLabel(scheduledTime)}`
+      ? `${formatDayLabel(parsePickupSlotDate(scheduledDate, "12:00") ?? new Date(`${scheduledDate}T12:00:00`))} at ${formatSlotLabel(scheduledTime)}`
       : "";
 
   if (isOrderCancelled) {
@@ -163,7 +191,7 @@ export function PickupScheduler({
         Pick a date first, then choose any available 30-minute pickup slot from 8:00 AM to 6:00 PM. All shown times are currently available.
       </p>
 
-      <div className={`mt-5 flex gap-2 overflow-x-auto pb-2 ${shouldShakeDates ? "animate-date-nudge" : ""}`}>
+      <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
         {days.slice(0, 3).map((day) => {
           const value = toDateInputValue(day);
           return (
@@ -204,11 +232,16 @@ export function PickupScheduler({
 
       <div className="mt-5">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-[#cb6843]">Pickup time</p>
+        {!selectedDate ? (
+          <p className="mt-3 rounded-2xl border border-dashed border-[#c8ba7e]/35 bg-[#f6f2eb] px-4 py-5 text-sm font-bold text-[#49392c]/65">
+            Choose a pickup date above to see available times.
+          </p>
+        ) : (
         <div className="mt-3 max-h-52 overflow-y-auto rounded-2xl border border-[#c8ba7e]/15 bg-[#f6f2eb] p-3">
           {slots.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {slots.map((slot) => {
-                const isBlocked = selectedDate ? blockedSet.has(getBlackoutSlotKey(selectedDate, slot)) : false;
+                const isBlocked = blockedSet.has(getBlackoutSlotKey(selectedDate, slot));
 
                 return (
                   <button
@@ -216,10 +249,6 @@ export function PickupScheduler({
                     type="button"
                     disabled={isBlocked}
                     onClick={() => {
-                      if (!selectedDate) {
-                        promptDateFirst();
-                        return;
-                      }
                       if (isBlocked) return;
                       setSelectedTime(slot);
                       setMessage("");
@@ -227,7 +256,7 @@ export function PickupScheduler({
                     className={`rounded-xl px-3 py-2 text-sm font-black transition disabled:cursor-not-allowed ${
                       isBlocked
                         ? "bg-gray-200 text-gray-400"
-                        : selectedDate && selectedTime === slot
+                        : selectedTime === slot
                           ? "bg-[#4e5026] text-white"
                           : "bg-white text-[#4e5026]"
                     }`}
@@ -241,15 +270,22 @@ export function PickupScheduler({
             <p className="text-sm font-bold text-[#49392c]/65">No pickup slots remain for this day. Choose another day.</p>
           )}
         </div>
+        )}
       </div>
+
+      {selectionLabel ? (
+        <p className="mt-4 rounded-2xl bg-[#eef2df] px-4 py-3 text-sm font-black text-[#4e5026]">
+          Your selection: {selectionLabel}
+        </p>
+      ) : null}
 
       <button
         type="button"
         onClick={saveSelection}
-        disabled={!selectedDate || !selectedTime || isPending}
+        disabled={!canSave}
         className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#4e5026] px-6 text-sm font-black text-white transition hover:bg-[#49392c] disabled:cursor-not-allowed disabled:bg-gray-400"
       >
-        {isPending ? "Saving..." : "Save pickup time"}
+        {isSaving ? "Saving..." : "Save pickup time"}
       </button>
       {message ? <p className="mt-3 text-center text-sm font-black text-[#4e5026]">{message}</p> : null}
     </div>
