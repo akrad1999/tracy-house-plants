@@ -7,7 +7,6 @@ import { PickupScheduler } from "@/components/checkout/PickupScheduler";
 import { PageHero } from "@/components/PageHero";
 import { formatPrice } from "@/lib/plants";
 import { getBlackoutSlotKey, getPickupWindowDateValues } from "@/lib/pickup";
-import { runDueOrderReminderEmails } from "@/lib/email/run-due-order-reminders";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
 export const metadata: Metadata = {
@@ -105,7 +104,6 @@ async function getBlockedPickupSlots(createdAt: string) {
 
 export default async function CheckoutSuccessPage({ searchParams }: CheckoutSuccessPageProps) {
   const { session_id: sessionId } = await searchParams;
-  await runDueOrderReminderEmails();
   const order = await getOrder(sessionId);
   const imageByPlantId = order ? await getFeaturedImages(order.order_items) : new Map<string, { src: string; alt: string }>();
   const blockedPickupSlots = order ? await getBlockedPickupSlots(order.created_at) : [];

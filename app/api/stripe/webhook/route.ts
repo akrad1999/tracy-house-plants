@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
-import { initializeOrderEmailSchedule, processDueScheduleReminderEmails, sendAdminOrderNotification } from "@/lib/email/order-email-service";
+import { initializeOrderEmailSchedule, sendAdminOrderNotification } from "@/lib/email/order-email-service";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
@@ -115,12 +115,6 @@ export async function POST(request: NextRequest) {
       } catch (adminEmailError) {
         console.error("[stripe-webhook] admin notification failed", adminEmailError);
       }
-    }
-
-    try {
-      await processDueScheduleReminderEmails();
-    } catch (reminderEmailError) {
-      console.error("[stripe-webhook] schedule reminder sweep failed", reminderEmailError);
     }
   } catch (error) {
     return NextResponse.json(

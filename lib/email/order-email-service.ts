@@ -129,10 +129,7 @@ export async function recordCheckoutSuccessView(orderId: string) {
     .maybeSingle();
 
   if (loadError || !order) return;
-  if (order.checkout_success_viewed_at) {
-    await processDueScheduleReminderEmails();
-    return;
-  }
+  if (order.checkout_success_viewed_at) return;
 
   const { error } = await supabase
     .from("orders")
@@ -143,8 +140,6 @@ export async function recordCheckoutSuccessView(orderId: string) {
     .eq("id", orderId);
 
   if (error) throw new Error(error.message);
-
-  await processDueScheduleReminderEmails();
 }
 
 export async function sendAdminOrderNotification(orderId: string) {
@@ -208,6 +203,7 @@ export async function sendPickupConfirmationForOrder(orderId: string, isUpdate: 
 }
 
 export async function processDueScheduleReminderEmails() {
+  // Called once per day by /api/cron/order-emails (Vercel Hobby cron limit).
   const supabase = createSupabaseServiceRoleClient();
   const now = new Date().toISOString();
 

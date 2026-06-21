@@ -6,7 +6,6 @@ import { PickupScheduler } from "@/components/checkout/PickupScheduler";
 import { PageHero } from "@/components/PageHero";
 import { formatPrice } from "@/lib/plants";
 import { getBlackoutSlotKey, getPickupWindowDateValues } from "@/lib/pickup";
-import { runDueOrderReminderEmails } from "@/lib/email/run-due-order-reminders";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
@@ -49,7 +48,6 @@ async function getBlockedPickupSlots(createdAt: string) {
 
 export default async function ScheduleOrderPage({ params }: ScheduleOrderPageProps) {
   const { orderId } = await params;
-  await runDueOrderReminderEmails();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user }
