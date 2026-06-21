@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { sendPickupConfirmationForOrder } from "@/lib/email/order-email-service";
 import { buildPickupDays, buildPickupSlots, normalizePickupTime, parsePickupSlotDate, toDateInputValue, toPickupTimeValue } from "@/lib/pickup";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
@@ -47,7 +48,7 @@ export async function savePickupSlot(formData: FormData): Promise<SavePickupResu
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .select("id, profile_id, created_at")
+    .select("id, profile_id, created_at, pickup_date, pickup_time")
     .eq("id", orderId)
     .single();
 
@@ -73,6 +74,7 @@ export async function savePickupSlot(formData: FormData): Promise<SavePickupResu
   if (isBlocked) return { ok: false, message: "Choose another pickup time." };
 
   const pickupTimeValue = toPickupTimeValue(pickupTime);
+  const hadExistingPickup = Boolean(order.pickup_date && order.pickup_time);
   const { error: updateError } = await serviceSupabase
     .from("orders")
     .update({
@@ -84,8 +86,15 @@ export async function savePickupSlot(formData: FormData): Promise<SavePickupResu
 
   if (updateError) return { ok: false, message: updateError.message };
 
+  try {
+    await sendPickupConfirmationForOrder(orderId, hadExistingPickup);
+  } catch (emailError) {
+    console.error("[savePickupSlot] pickup confirmation email failed", emailError);
+  }
+
   revalidatePath("/checkout/success");
   revalidatePath("/account");
+  revalidatePath(`/account/orders/${orderId}/schedule`);
 
   return { ok: true, message: "Pickup time saved.", pickupDate, pickupTime };
 }

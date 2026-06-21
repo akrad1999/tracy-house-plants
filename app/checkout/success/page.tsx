@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ClearCartOnMount } from "@/components/cart/ClearCartOnMount";
+import { RecordCheckoutView } from "@/components/checkout/RecordCheckoutView";
 import { PickupScheduler } from "@/components/checkout/PickupScheduler";
 import { PageHero } from "@/components/PageHero";
 import { formatPrice } from "@/lib/plants";
 import { getBlackoutSlotKey, getPickupWindowDateValues } from "@/lib/pickup";
+import { runDueOrderReminderEmails } from "@/lib/email/run-due-order-reminders";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
 export const metadata: Metadata = {
@@ -103,6 +105,7 @@ async function getBlockedPickupSlots(createdAt: string) {
 
 export default async function CheckoutSuccessPage({ searchParams }: CheckoutSuccessPageProps) {
   const { session_id: sessionId } = await searchParams;
+  await runDueOrderReminderEmails();
   const order = await getOrder(sessionId);
   const imageByPlantId = order ? await getFeaturedImages(order.order_items) : new Map<string, { src: string; alt: string }>();
   const blockedPickupSlots = order ? await getBlockedPickupSlots(order.created_at) : [];
@@ -139,6 +142,7 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
+            <RecordCheckoutView orderId={order.id} />
             <PickupScheduler
               orderId={order.id}
               orderCreatedAt={order.created_at}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHero } from "@/components/PageHero";
 import { formatPrice } from "@/lib/plants";
@@ -86,6 +87,13 @@ export default async function OrdersPage() {
                       <p className="mt-2 text-sm font-bold text-green-950/65">
                         Pickup: {new Date(`${order.pickup_date}T00:00:00`).toLocaleDateString()} at {order.pickup_time.slice(0, 5)}
                       </p>
+                    ) : order.status !== "cancelled" ? (
+                      <Link
+                        href={`/account/orders/${order.id}/schedule`}
+                        className="mt-3 inline-flex min-h-10 items-center justify-center rounded-full bg-green-950 px-4 text-sm font-black text-white transition hover:bg-green-800"
+                      >
+                        Schedule pickup
+                      </Link>
                     ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">

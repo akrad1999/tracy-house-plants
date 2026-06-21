@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
-import { sendOrderConfirmationEmail } from "@/lib/email/order-confirmation";
+import { initializeOrderEmailSchedule, processDueScheduleReminderEmails, sendAdminOrderNotification } from "@/lib/email/order-email-service";
 import { getStripe } from "@/lib/stripe";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
@@ -15,17 +15,8 @@ type FinalizeOrderItem = {
 
 type FinalizedOrderRow = {
   id: string;
-  customer_email: string;
-  customer_name: string | null;
-  total_cents: number;
   created_at: string;
-  confirmation_email_sent_at: string | null;
-  order_items: {
-    plant_name: string;
-    quantity: number;
-    unit_price_cents: number;
-    line_total_cents: number;
-  }[];
+  admin_notification_email_sent_at: string | null;
 };
 
 function getPaymentIntentId(paymentIntent: Stripe.Checkout.Session["payment_intent"]) {
@@ -108,22 +99,7 @@ export async function POST(request: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select(
-        `
-        id,
-        customer_email,
-        customer_name,
-        total_cents,
-        created_at,
-        confirmation_email_sent_at,
-        order_items (
-          plant_name,
-          quantity,
-          unit_price_cents,
-          line_total_cents
-        )
-      `
-      )
+      .select("id, created_at, admin_notification_email_sent_at")
       .eq("id", orderId)
       .single();
 
@@ -131,38 +107,20 @@ export async function POST(request: NextRequest) {
 
     const finalizedOrder = order as FinalizedOrderRow;
 
-    if (!finalizedOrder.confirmation_email_sent_at) {
-      try {
-        await sendOrderConfirmationEmail({
-          orderId: finalizedOrder.id,
-          customerEmail: finalizedOrder.customer_email,
-          customerName: finalizedOrder.customer_name,
-          totalCents: finalizedOrder.total_cents,
-          createdAt: finalizedOrder.created_at,
-          items: finalizedOrder.order_items.map((item) => ({
-            plantName: item.plant_name,
-            quantity: item.quantity,
-            unitPriceCents: item.unit_price_cents,
-            lineTotalCents: item.line_total_cents
-          }))
-        });
+    await initializeOrderEmailSchedule(finalizedOrder.id, finalizedOrder.created_at);
 
-        await supabase
-          .from("orders")
-          .update({
-            confirmation_email_sent_at: new Date().toISOString(),
-            confirmation_email_last_error: null
-          })
-          .eq("id", finalizedOrder.id);
-      } catch (emailError) {
-        await supabase
-          .from("orders")
-          .update({
-            confirmation_email_last_error:
-              emailError instanceof Error ? emailError.message : "Unable to send confirmation email."
-          })
-          .eq("id", finalizedOrder.id);
+    if (!finalizedOrder.admin_notification_email_sent_at) {
+      try {
+        await sendAdminOrderNotification(finalizedOrder.id);
+      } catch (adminEmailError) {
+        console.error("[stripe-webhook] admin notification failed", adminEmailError);
       }
+    }
+
+    try {
+      await processDueScheduleReminderEmails();
+    } catch (reminderEmailError) {
+      console.error("[stripe-webhook] schedule reminder sweep failed", reminderEmailError);
     }
   } catch (error) {
     return NextResponse.json(
